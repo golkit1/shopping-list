@@ -17,221 +17,210 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-  /* ═══════════════════════════════════════════════
-     🌊 ים תיכוני — Mediterranean Market Theme
-  ═══════════════════════════════════════════════ */
-  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Assistant:wght@400;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
   :root {
-    --cream:      #F6F1E8;
-    --cream2:     #EDE7D9;
-    --white:      #FDFAF5;
-    --blue:       #1B4F8A;
-    --blue-lt:    #2D6FB5;
-    --blue-dim:   #E8EFF8;
-    --terra:      #C85A2A;
-    --terra-lt:   #F0784A;
-    --terra-dim:  #FDF0EB;
-    --sun:        #E8A020;
-    --sun-dim:    #FDF5E0;
-    --olive:      #4A7C59;
-    --olive-dim:  #EBF3EE;
-    --text:       #1A1410;
-    --text2:      #4A3F35;
-    --muted:      #9C8E82;
-    --border:     #DDD5C8;
-    --shadow:     rgba(26,20,16,.12);
-    --radius:     16px;
+    --bg:        #F8F9FC;
+    --white:     #FFFFFF;
+    --border:    #E8EAF0;
+    --border2:   #D0D4E0;
+    --text:      #1A1D2E;
+    --text2:     #4A4F6A;
+    --muted:     #9298B0;
+    --radius:    18px;
+    --shadow-sm: 0 1px 4px rgba(60,70,120,.06);
+    --shadow:    0 4px 16px rgba(60,70,120,.10);
+    --shadow-lg: 0 8px 32px rgba(60,70,120,.14);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { height: 100%; }
-
   body {
-    font-family: 'Assistant', sans-serif;
-    background: var(--cream);
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
     color: var(--text);
     min-height: 100dvh;
     direction: rtl;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
-    /* subtle linen texture */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23F6F1E8'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23EDE7D9' opacity='.4'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23EDE7D9' opacity='.4'/%3E%3C/svg%3E");
   }
-
-  input, button, select { font-family: 'Assistant', sans-serif; }
+  input, button, select { font-family: 'Nunito', sans-serif; }
   ::-webkit-scrollbar { width: 3px; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-  button { cursor: pointer; transition: transform .12s, box-shadow .12s; }
-  button:active { transform: scale(.95); }
-  button:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  button { cursor: pointer; }
+  button:disabled { opacity: .35; cursor: not-allowed; }
 
   /* ── App Shell ── */
   #app { max-width: 520px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
 
   /* ── Header ── */
   #header {
-    background: var(--blue);
-    padding: 20px 16px 18px;
+    background: var(--white);
+    padding: 18px 16px 16px;
     position: sticky; top: 0; z-index: 50;
-    /* decorative tile pattern overlay */
-    background-image:
-      radial-gradient(circle at 20% 50%, rgba(255,255,255,.06) 0%, transparent 60%),
-      radial-gradient(circle at 80% 20%, rgba(232,160,32,.12) 0%, transparent 50%);
+    border-bottom: 1.5px solid var(--border);
+    box-shadow: var(--shadow-sm);
   }
   .header-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .header-left { display: flex; flex-direction: column; gap: 3px; }
+  .header-left { display: flex; flex-direction: column; gap: 2px; }
   .header-title {
-    font-family: 'DM Serif Display', serif;
-    color: #fff;
-    font-size: 22px;
-    letter-spacing: .2px;
-    text-shadow: 0 2px 12px rgba(0,0,0,.25);
-    line-height: 1.1;
+    font-size: 20px; font-weight: 900; color: var(--text);
+    letter-spacing: -.3px;
   }
-  .header-sub { color: rgba(255,255,255,.6); font-size: 12px; font-weight: 600; }
+  .header-sub { color: var(--muted); font-size: 12px; font-weight: 700; }
   .header-actions { display: flex; gap: 8px; align-items: center; }
 
   .hbtn {
-    background: rgba(255,255,255,.15);
-    border: 1.5px solid rgba(255,255,255,.25);
-    color: rgba(255,255,255,.9);
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    color: var(--text2);
     border-radius: 24px;
     height: 36px; padding: 0 14px;
     font-size: 13px; font-weight: 700;
     display: flex; align-items: center; gap: 5px;
-    backdrop-filter: blur(8px);
     transition: background .15s, border-color .15s;
   }
-  .hbtn:hover { background: rgba(255,255,255,.25); border-color: rgba(255,255,255,.4); }
+  .hbtn:hover { background: var(--border); }
 
   .sync-dot {
     width: 8px; height: 8px; border-radius: 50%;
-    background: rgba(255,255,255,.3); flex-shrink: 0;
-    transition: background .4s, box-shadow .4s;
+    background: var(--border2); flex-shrink: 0; transition: background .4s;
   }
-  .sync-dot.live {
-    background: #5eead4;
-    box-shadow: 0 0 8px #5eead4;
-  }
+  .sync-dot.live { background: #34d399; box-shadow: 0 0 6px #34d39988; }
 
-  /* ── Accordion list ── */
+  /* ── Accordion ── */
   #stores-list {
-    display: flex; flex-direction: column; gap: 12px;
-    padding: 14px 12px 28px;
-    flex: 1;
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 14px 12px 28px; flex: 1;
   }
 
   .store-section {
     border-radius: var(--radius);
-    overflow: hidden;
     background: var(--white);
-    box-shadow: 0 2px 8px var(--shadow), 0 0 0 1px rgba(0,0,0,.04);
-    transition: box-shadow .2s;
+    box-shadow: var(--shadow-sm);
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+    transition: box-shadow .25s ease, border-color .25s ease;
+    will-change: box-shadow;
   }
   .store-section.open {
-    box-shadow: 0 6px 24px var(--shadow), 0 0 0 1px rgba(0,0,0,.06);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border2);
   }
 
   .store-header {
     display: flex; align-items: center; gap: 12px;
-    padding: 15px 16px;
-    cursor: pointer;
+    padding: 14px 16px;
+    cursor: pointer; border: none; width: 100%; text-align: right;
     -webkit-user-select: none; user-select: none;
-    border: none; width: 100%; text-align: right;
-    min-height: 62px;
-    position: relative;
-    transition: filter .12s;
+    min-height: 64px;
+    background: var(--white);
+    transition: background .15s;
   }
-  .store-header:active { filter: brightness(.93); }
+  .store-header:active { background: var(--bg); }
+
+  /* Pastel left-border accent */
+  .store-section .store-header { border-right: 5px solid transparent; }
+  .store-section.open .store-header { background: var(--bg); }
 
   .store-header-emoji {
-    font-size: 28px; flex-shrink: 0;
-    line-height: 1;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,.15));
+    font-size: 28px; flex-shrink: 0; line-height: 1;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
   }
+  .store-section.open .store-header-emoji { transform: scale(1.15); }
+
   .store-header-info { flex: 1; text-align: right; }
-  .store-header-name {
-    font-size: 17px; font-weight: 800; line-height: 1.2;
-  }
-  .store-header-count {
-    font-size: 12px; font-weight: 600; margin-top: 2px; opacity: .65;
-  }
+  .store-header-name { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.2; }
+  .store-header-count { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 1px; }
+
   .store-header-badge {
     color: #fff; border-radius: 20px;
-    padding: 4px 11px; font-size: 13px; font-weight: 800;
-    flex-shrink: 0; white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    padding: 4px 11px; font-size: 12px; font-weight: 900; flex-shrink: 0;
   }
   .store-header-arrow {
-    font-size: 11px; flex-shrink: 0; opacity: .5;
-    transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s;
-    margin-right: 2px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--muted); flex-shrink: 0;
+    transition: transform .35s cubic-bezier(.34,1.3,.64,1), background .2s, color .2s;
   }
   .store-section.open .store-header-arrow {
-    transform: rotate(180deg); opacity: .8;
+    transform: rotate(180deg);
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
   }
 
+  /* ── Accordion body with smooth height animation ── */
   .store-body {
-    max-height: 0; overflow: hidden;
-    transition: max-height .38s cubic-bezier(.4,0,.2,1);
-    border-top: 0px solid var(--border);
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .38s cubic-bezier(.4,0,.2,1);
   }
-  .store-section.open .store-body {
-    max-height: 2400px;
-    border-top-width: 1.5px;
+  .store-section.open .store-body { grid-template-rows: 1fr; }
+  .store-body-overflow { overflow: hidden; }
+
+  .store-body-inner {
+    padding: 13px 13px 15px;
+    border-top: 1.5px solid var(--border);
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .3s ease .05s, transform .3s ease .05s;
   }
-  .store-body-inner { padding: 13px 13px 15px; }
+  .store-section.open .store-body-inner {
+    opacity: 1; transform: translateY(0);
+  }
 
   /* ── Quick-Add ── */
   .quick-add {
     display: flex; gap: 8px; align-items: center;
-    background: var(--cream); border-radius: 12px;
+    background: var(--bg); border-radius: 12px;
     padding: 10px 12px; margin-bottom: 12px;
     border: 2px solid var(--border);
     transition: border-color .15s, box-shadow .15s;
   }
-  .quick-add:focus-within {
-    border-color: var(--blue-lt);
-    box-shadow: 0 0 0 3px var(--blue-dim);
-  }
+  .quick-add:focus-within { border-color: var(--text2); box-shadow: 0 0 0 3px rgba(74,79,106,.08); }
   .quick-add input {
     flex: 1; border: none; background: transparent;
-    font-size: 15px; font-weight: 600; outline: none;
+    font-size: 15px; font-weight: 700; outline: none;
     direction: rtl; color: var(--text); min-width: 0;
-    font-family: 'Assistant', sans-serif;
+    font-family: 'Nunito', sans-serif;
   }
-  .quick-add input::placeholder { color: var(--muted); font-weight: 500; }
+  .quick-add input::placeholder { color: var(--muted); font-weight: 600; }
 
   /* ── Buttons ── */
   .btn-primary {
     color: #fff; border: none; border-radius: 12px;
     padding: 9px 16px; font-size: 14px; font-weight: 800;
-    white-space: nowrap; letter-spacing: .2px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    white-space: nowrap;
+    transition: transform .12s, box-shadow .12s;
   }
+  .btn-primary:active { transform: scale(.95); }
   .btn-ghost {
     background: transparent; border: 2px solid;
     border-radius: 12px; padding: 7px 11px;
     font-size: 13px; font-weight: 700; white-space: nowrap;
+    transition: background .12s;
   }
   .btn-secondary {
-    background: var(--cream2); color: var(--text2);
+    background: var(--bg); color: var(--text2);
     border: 1.5px solid var(--border); border-radius: 12px;
     padding: 9px 16px; font-size: 14px; font-weight: 700;
+    transition: background .12s;
   }
+  .btn-secondary:hover { background: var(--border); }
   .btn-danger {
-    background: #fff5f5; color: #c0392b;
-    border: 1.5px solid #f5b7b1; border-radius: 12px;
+    background: #fff5f5; color: #e53e3e;
+    border: 1.5px solid #fed7d7; border-radius: 12px;
     padding: 9px 16px; font-size: 14px; font-weight: 700;
   }
   .btn-sm { padding: 5px 10px !important; font-size: 12px !important; }
   .btn-full { width: 100%; text-align: center; }
+  button:disabled { opacity: .35; cursor: not-allowed; }
 
   /* ── Catalog Panel ── */
   .catalog-panel {
-    background: var(--cream); border-radius: 12px;
+    background: var(--bg); border-radius: 12px;
     padding: 12px; margin-bottom: 12px;
     border: 1.5px solid var(--border);
     display: none;
@@ -241,240 +230,320 @@
   .catalog-search-row input {
     flex: 1; border: 1.5px solid var(--border); border-radius: 10px;
     padding: 7px 11px; font-size: 13px; outline: none;
-    direction: rtl; color: var(--text); background: #fff;
-    font-family: 'Assistant', sans-serif;
-    transition: border-color .15s;
+    direction: rtl; color: var(--text); background: var(--white);
+    font-family: 'Nunito', sans-serif; transition: border-color .15s;
   }
-  .catalog-search-row input:focus { border-color: var(--blue-lt); }
-  .catalog-chips {
-    display: flex; flex-wrap: wrap; gap: 7px;
-    max-height: 150px; overflow-y: auto;
-  }
+  .catalog-search-row input:focus { border-color: var(--text2); }
+  .catalog-chips { display: flex; flex-wrap: wrap; gap: 7px; max-height: 150px; overflow-y: auto; }
   .chip {
     border-radius: 20px; padding: 6px 13px;
     font-size: 13px; font-weight: 700;
     transition: background .12s, color .12s, transform .1s;
     white-space: nowrap; border: 1.5px solid;
   }
-  .chip:active { transform: scale(.95); }
+  .chip:active { transform: scale(.93); }
 
   /* ── Item List ── */
   .item-list { display: flex; flex-direction: column; gap: 7px; }
+
   .item-row {
     display: flex; align-items: center; gap: 11px;
-    background: #fff; border: 1.5px solid var(--border);
-    border-radius: 13px; padding: 11px 13px;
-    transition: border-color .15s, background .15s, opacity .2s;
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 11px 13px;
+    min-height: 54px;
     -webkit-user-select: none; user-select: none;
-    min-height: 52px;
+    transition: border-color .15s, background .15s, opacity .25s, transform .15s;
   }
-  .item-row:active { background: var(--cream); }
-  .item-row.done { background: var(--cream); opacity: .6; }
+  .item-row:active { transform: scale(.985); background: var(--bg); }
+  .item-row.done { opacity: .5; }
 
   .checkbox {
     width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
-    border: 2.5px solid var(--border); cursor: pointer;
+    border: 2.5px solid var(--border2); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: all .2s cubic-bezier(.34,1.56,.64,1);
-    background: #fff;
+    background: var(--white);
+    transition: all .22s cubic-bezier(.34,1.56,.64,1);
   }
-  .checkbox:active { transform: scale(.88); }
-  .checkbox.checked { background: var(--olive); border-color: var(--olive); }
+  .checkbox:active { transform: scale(.82); }
+  .checkbox.checked { border-color: transparent; }
   .checkbox svg { display: none; }
   .checkbox.checked svg { display: block; }
 
   .item-name {
     flex: 1; font-size: 15px; font-weight: 700; color: var(--text);
-    transition: all .15s; cursor: pointer;
-    line-height: 1.3;
+    cursor: pointer; line-height: 1.3;
+    transition: color .2s;
   }
-  .item-row.done .item-name { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+  .item-row.done .item-name { text-decoration: line-through; text-decoration-color: rgba(0,0,0,.25); color: var(--text2); font-weight: 600; opacity: .75; }
 
   .qty-badge {
     border: 1.5px solid; border-radius: 10px;
-    padding: 4px 10px; font-size: 12px; font-weight: 700;
+    padding: 4px 10px; font-size: 12px; font-weight: 800;
     white-space: nowrap; flex-shrink: 0; cursor: pointer;
-    transition: opacity .12s;
   }
   .del-btn {
-    background: none; border: none; color: var(--border);
+    background: none; border: none; color: var(--border2);
     font-size: 22px; padding: 0 2px; line-height: 1; flex-shrink: 0;
-    transition: color .12s;
+    transition: color .12s, transform .12s;
   }
-  .del-btn:hover { color: #e74c3c; }
+  .del-btn:hover { color: #fc8181; transform: scale(1.2); }
+  .del-btn:active { transform: scale(.9); }
 
-  /* Done section */
   .done-header {
     display: flex; align-items: center; justify-content: space-between;
     margin: 14px 0 7px; padding: 0 2px;
   }
-  .done-label {
-    font-size: 11px; color: var(--muted); font-weight: 700;
-    letter-spacing: .7px; text-transform: uppercase;
-  }
-  .clear-btn {
-    background: none; border: none; font-size: 12px;
-    color: var(--terra); font-weight: 700;
-    padding: 3px 8px; border-radius: 8px;
-    transition: background .12s;
-  }
-  .clear-btn:hover { background: var(--terra-dim); }
+  .done-label { font-size: 11px; color: var(--muted); font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+  .clear-btn { background: none; border: none; font-size: 12px; color: var(--muted); font-weight: 800; padding: 3px 8px; border-radius: 8px; transition: color .12s, background .12s; }
+  .clear-btn:hover { color: #e53e3e; background: #fff5f5; }
 
-  /* Empty state */
   .empty-state { text-align: center; padding: 28px 16px; color: var(--muted); }
   .empty-state .emoji { font-size: 40px; margin-bottom: 10px; }
-  .empty-state p { font-size: 14px; font-weight: 600; }
+  .empty-state p { font-size: 14px; font-weight: 700; }
 
   /* ── Modal ── */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(26,20,16,.6);
-    backdrop-filter: blur(4px);
-    z-index: 200;
-    display: flex; align-items: flex-end; justify-content: center;
-    animation: fadeIn .18s;
+    background: rgba(26,29,46,.5);
+    backdrop-filter: blur(6px);
+    z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+    animation: fadeIn .2s ease;
   }
   @media (min-height: 600px) { .modal-overlay { align-items: center; padding: 12px; } }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   .modal-box {
-    background: var(--white); border-radius: 22px 22px 0 0;
+    background: var(--white); border-radius: 24px 24px 0 0;
     width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto;
-    direction: rtl;
-    box-shadow: 0 -8px 40px rgba(0,0,0,.2);
-    animation: slideUp .26s cubic-bezier(.34,1.3,.64,1);
+    direction: rtl; border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    animation: slideUp .3s cubic-bezier(.34,1.2,.64,1);
   }
-  @media (min-height: 600px) {
-    .modal-box { border-radius: 22px; animation: popIn .22s cubic-bezier(.34,1.3,.64,1); }
-  }
-  @keyframes slideUp { from{transform:translateY(110%)} to{transform:translateY(0)} }
-  @keyframes popIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+  @media (min-height: 600px) { .modal-box { border-radius: 24px; animation: popIn .25s cubic-bezier(.34,1.2,.64,1); } }
+  @keyframes slideUp { from{transform:translateY(110%);opacity:0} to{transform:translateY(0);opacity:1} }
+  @keyframes popIn { from{opacity:0;transform:scale(.88) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
   .modal-header {
     padding: 18px 18px 14px;
     border-bottom: 1.5px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
     position: sticky; top: 0; background: var(--white); z-index: 1;
-    border-radius: 22px 22px 0 0;
+    border-radius: 24px 24px 0 0;
   }
-  .modal-title { font-size: 17px; font-weight: 800; color: var(--text); }
+  .modal-title { font-size: 17px; font-weight: 900; color: var(--text); }
   .modal-close {
-    background: var(--cream2); border: none; border-radius: 9px;
-    width: 32px; height: 32px; font-size: 15px; color: var(--text2);
+    background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px;
+    width: 32px; height: 32px; font-size: 14px; color: var(--text2);
     display: flex; align-items: center; justify-content: center;
+    transition: background .12s;
   }
+  .modal-close:hover { background: var(--border); }
   .modal-body { padding: 14px 18px 28px; }
 
   /* ── Qty Modal ── */
   .qty-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
   .qty-row input {
     flex: 1; border: 2px solid var(--border); border-radius: 12px;
-    padding: 10px; font-size: 24px; font-weight: 800;
+    padding: 10px; font-size: 26px; font-weight: 900;
     text-align: center; outline: none; color: var(--text);
-    background: var(--cream); font-family: 'Assistant', sans-serif;
+    background: var(--bg); font-family: 'Nunito', sans-serif;
     transition: border-color .15s;
   }
-  .qty-row input:focus { border-color: var(--blue-lt); }
+  .qty-row input:focus { border-color: var(--text2); }
   .qty-stepper {
-    width: 44px; height: 44px; border: none; border-radius: 12px;
-    font-size: 22px; font-weight: 700; flex-shrink: 0;
+    width: 44px; height: 44px; border: 2px solid var(--border); border-radius: 12px;
+    font-size: 22px; font-weight: 900; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    background: var(--cream2); color: var(--text);
+    background: var(--bg); color: var(--text);
+    transition: background .12s; cursor: pointer;
   }
+  .qty-stepper:active { background: var(--border); transform: scale(.9); }
   .unit-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
   .unit-chip {
     border: 2px solid var(--border); border-radius: 20px; padding: 7px 15px;
-    font-size: 13px; font-weight: 700; background: #fff; color: var(--text2);
+    font-size: 13px; font-weight: 700; background: var(--white); color: var(--text2);
     cursor: pointer; transition: all .15s;
   }
-  .unit-chip.active {
-    background: var(--blue); border-color: var(--blue); color: #fff;
-  }
+  .unit-chip.active { background: var(--text); border-color: var(--text); color: #fff; }
 
   /* ── Manage Stores ── */
   .store-row {
     display: flex; align-items: center; gap: 10px;
-    background: var(--cream); border-radius: 13px;
+    background: var(--bg); border-radius: 13px;
     padding: 11px 13px; margin-bottom: 8px;
     border: 1.5px solid var(--border);
   }
   .store-row-actions { display: flex; gap: 5px; }
   .edit-form {
-    background: var(--blue-dim); border: 2px solid var(--blue-lt);
+    background: var(--bg); border: 2px solid var(--border2);
     border-radius: 14px; padding: 14px; margin-top: 12px;
   }
-  .edit-form-title { font-size: 13px; font-weight: 800; color: var(--blue); margin-bottom: 11px; }
+  .edit-form-title { font-size: 13px; font-weight: 800; color: var(--text2); margin-bottom: 11px; }
   .form-group { margin-bottom: 11px; }
   .form-label { font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 5px; display: block; letter-spacing: .5px; text-transform: uppercase; }
   .form-input {
     width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
     padding: 9px 12px; font-size: 14px; outline: none;
-    direction: rtl; color: var(--text); background: #fff;
-    font-family: 'Assistant', sans-serif;
-    transition: border-color .15s;
+    direction: rtl; color: var(--text); background: var(--white);
+    font-family: 'Nunito', sans-serif; transition: border-color .15s;
   }
-  .form-input:focus { border-color: var(--blue-lt); }
+  .form-input:focus { border-color: var(--text2); }
   .emoji-grid { display: flex; flex-wrap: wrap; gap: 6px; }
   .emoji-option {
-    font-size: 20px; background: #fff; border: 2.5px solid transparent;
+    font-size: 20px; background: var(--white); border: 2.5px solid transparent;
     border-radius: 9px; padding: 4px 6px; cursor: pointer;
     transition: border-color .12s, background .12s;
   }
-  .emoji-option.selected { background: var(--blue-dim); border-color: var(--blue); }
+  .emoji-option.selected { background: var(--bg); border-color: var(--text2); }
   .color-grid { display: flex; flex-wrap: wrap; gap: 6px; }
   .color-option {
     width: 28px; height: 28px; border-radius: 50%;
     border: 3px solid transparent; cursor: pointer;
-    transition: transform .12s, border-color .12s;
+    transition: transform .15s;
   }
   .color-option:hover { transform: scale(1.15); }
   .color-option.selected { border-color: var(--text); transform: scale(1.15); }
   .add-store-btn {
     width: 100%; background: transparent;
-    border: 2px dashed var(--border); border-radius: 13px;
+    border: 2px dashed var(--border2); border-radius: 13px;
     padding: 12px; margin-top: 8px;
     font-size: 13px; font-weight: 700; color: var(--muted);
-    font-family: 'Assistant', sans-serif;
-    transition: border-color .15s, color .15s;
+    font-family: 'Nunito', sans-serif; transition: all .15s;
   }
-  .add-store-btn:hover { border-color: var(--blue-lt); color: var(--blue); }
+  .add-store-btn:hover { border-color: var(--text2); color: var(--text2); }
 
   /* ── History ── */
   .history-filters { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
   .filter-btn {
     border: 2px solid var(--border); border-radius: 20px; padding: 6px 14px;
-    font-size: 13px; font-weight: 700; background: #fff; color: var(--text2);
+    font-size: 13px; font-weight: 700; background: var(--white); color: var(--text2);
     cursor: pointer; transition: all .15s;
   }
-  .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .filter-btn.active { background: var(--text); border-color: var(--text); color: #fff; }
   .history-item {
     display: flex; align-items: center; gap: 9px;
-    background: var(--cream); border-radius: 12px;
+    background: var(--bg); border-radius: 12px;
     padding: 10px 13px; margin-bottom: 6px;
     border: 1.5px solid var(--border);
   }
   .history-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
   .history-qty { font-size: 12px; font-weight: 800; border-radius: 8px; padding: 3px 8px; }
-  .history-date { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .history-date { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; }
 
   /* ── Toast ── */
   #toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
     background: var(--text); color: #fff;
     padding: 12px 22px; border-radius: 28px;
-    font-size: 14px; font-weight: 700;
+    font-size: 14px; font-weight: 800;
     z-index: 1000; opacity: 0;
-    transition: opacity .2s, transform .2s;
+    transition: opacity .22s, transform .22s cubic-bezier(.34,1.56,.64,1);
     pointer-events: none; white-space: nowrap;
-    box-shadow: 0 6px 24px rgba(0,0,0,.25);
-    transform: translateX(-50%) translateY(8px);
+    box-shadow: var(--shadow-lg);
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ── Footer ── */
   #footer {
     text-align: center; padding: 10px 16px 24px;
-    color: var(--muted); font-size: 11px; font-weight: 600;
-    letter-spacing: .3px;
+    color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .3px;
   }
+
+  /* ── Global Search ── */
+  #search-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin: 10px 12px 0;
+    background: var(--white); border: 2px solid var(--border);
+    border-radius: 14px; padding: 9px 13px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #search-bar:focus-within { border-color: var(--border2); box-shadow: 0 0 0 3px rgba(74,79,106,.07); }
+  #search-bar input {
+    flex: 1; border: none; background: transparent;
+    font-size: 14px; font-weight: 600; outline: none;
+    direction: rtl; color: var(--text); font-family: 'Nunito', sans-serif;
+  }
+  #search-bar input::placeholder { color: var(--muted); font-weight: 600; }
+  #search-results {
+    margin: 6px 12px 0;
+    background: var(--white); border-radius: 14px;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden; display: none;
+  }
+  #search-results.show { display: block; }
+  .search-result-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background .12s;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:active { background: var(--bg); }
+  .search-result-store { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .search-result-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .search-result-badge {
+    font-size: 11px; font-weight: 800; border-radius: 8px;
+    padding: 2px 8px; color: #fff;
+  }
+
+  /* ── Username badge ── */
+  .item-added-by {
+    font-size: 10px; color: var(--muted); font-weight: 700;
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── Smart suggestions ── */
+  .smart-suggest {
+    background: linear-gradient(135deg, #f0f4ff 0%, #fff 100%);
+    border: 1.5px solid #dde4f8; border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 11px;
+  }
+  .smart-suggest-title {
+    font-size: 11px; font-weight: 800; color: #6674aa;
+    margin-bottom: 7px; letter-spacing: .4px;
+  }
+  .smart-suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .smart-chip {
+    background: #fff; border: 1.5px solid #c8d0f0;
+    border-radius: 16px; padding: 5px 11px;
+    font-size: 12px; font-weight: 700; color: #4a54a0;
+    cursor: pointer; transition: background .12s, border-color .12s;
+    white-space: nowrap;
+  }
+  .smart-chip:active { background: #e8ecff; }
+
+  /* ── Recurring items ── */
+  .recurring-badge {
+    font-size: 9px; font-weight: 900; background: #fef3c7;
+    color: #b45309; border-radius: 6px; padding: 1px 5px;
+    border: 1px solid #fde68a; flex-shrink: 0;
+  }
+
+  /* ── Drag handle ── */
+  .drag-handle {
+    color: var(--border2); font-size: 14px;
+    cursor: grab; padding: 0 3px; flex-shrink: 0;
+    touch-action: none; line-height: 1;
+    display: flex; flex-direction: column; gap: 2px; align-items: center;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .drag-handle span { display: block; width: 14px; height: 2px; background: currentColor; border-radius: 2px; }
+  .item-row.dragging { opacity: .4; transform: scale(.98); }
+  .item-row.drag-over { border-color: var(--border2) !important; background: var(--bg); }
+
+  /* ── Username setup modal ── */
+  .username-setup { text-align: center; padding: 8px 0 4px; }
+  .username-setup .big-emoji { font-size: 52px; margin-bottom: 12px; }
+  .username-setup h2 { font-size: 20px; font-weight: 900; margin-bottom: 6px; }
+  .username-setup p { font-size: 14px; color: var(--muted); font-weight: 600; margin-bottom: 20px; line-height: 1.5; }
+  .username-input {
+    width: 100%; border: 2px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; font-size: 17px; font-weight: 700;
+    text-align: center; outline: none; color: var(--text);
+    background: var(--bg); font-family: 'Nunito', sans-serif;
+    transition: border-color .15s; margin-bottom: 12px;
+  }
+  .username-input:focus { border-color: var(--border2); }
 </style>
 </head>
 <body>
@@ -491,11 +560,22 @@
       </div>
       <div class="header-actions">
         <div class="sync-dot" id="sync-dot" title="סטטוס חיבור"></div>
-        <button class="hbtn" onclick="openHistory()">📋 היסטוריה</button>
+        <button class="hbtn" onclick="openHistory()">📋</button>
+        <button class="hbtn" onclick="openManageRecurring()">🔁</button>
         <button class="hbtn" onclick="openManageStores()">⚙️</button>
       </div>
     </div>
   </div>
+
+  <!-- Global Search -->
+  <div id="search-bar">
+    <span style="font-size:16px;color:var(--muted)">🔍</span>
+    <input id="search-input" type="text" placeholder="חיפוש בכל החנויות..."
+      oninput="globalSearch(this.value)" autocomplete="off" autocorrect="off">
+    <button id="search-clear" style="display:none;background:none;border:none;color:var(--muted);font-size:18px;padding:0"
+      onclick="clearSearch()">✕</button>
+  </div>
+  <div id="search-results"></div>
 
   <!-- Accordion store list -->
   <div id="stores-list">
@@ -532,11 +612,62 @@ const DEFAULT_STORES = [
   { id:"tasks", name:"משימות", emoji:"✅", color:"#374151", isTaskList:true, catalog:[] },
 ];
 
-let db, storesRef, listsRef, historyRef;
-let STATE = { stores: [], lists: {}, history: [] };
+let db, storesRef, listsRef, historyRef, recurringRef;
+let STATE = { stores: [], lists: {}, history: [], recurring: [] };
 let activeStoreId = null;
 let showCatalog = false;
 let catalogQuery = "";
+
+// ── Username (stored locally) ──────────────────────────
+let MY_NAME = localStorage.getItem('mkt-username-v2') || '';
+
+function setUsername(name) {
+  MY_NAME = name.trim();
+  localStorage.setItem('mkt-username-v2', MY_NAME);
+}
+
+function ensureUsername() {
+  if (MY_NAME) return;
+  openModal(`
+    <div class="username-setup">
+      <div class="big-emoji">👋</div>
+      <h2>מי את/ה?</h2>
+      <p>כדי לדעת מי הוסיף מוצרים<br>ומי רכש אותם</p>
+      <input class="username-input" id="uname-input" type="text"
+        placeholder="השם שלך..." maxlength="20"
+        onkeydown="if(event.key==='Enter')saveUsername()">
+      <button class="btn-primary btn-full" style="padding:13px;font-size:15px"
+        onclick="saveUsername()">✓ המשך</button>
+    </div>
+  `, '');
+}
+
+window.saveUsername = () => {
+  const v = document.getElementById('uname-input')?.value?.trim();
+  if (!v) { toast('הכנס שם'); return; }
+  setUsername(v);
+  closeModal();
+  toast('שלום ' + v + '! 👋');
+};
+
+// ── Sound ──────────────────────────────────────────────
+let _audioCtx = null;
+function playTick() {
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = _audioCtx.createOscillator();
+    const g = _audioCtx.createGain();
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.frequency.setValueAtTime(880, _audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(440, _audioCtx.currentTime + .08);
+    g.gain.setValueAtTime(.18, _audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, _audioCtx.currentTime + .12);
+    o.start(); o.stop(_audioCtx.currentTime + .12);
+  } catch(e) {}
+}
+function vibrate(ms) {
+  try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {}
+}
 
 // ── Performance: debounced render ─────────────────────────────
 let _renderPending = false;
@@ -567,9 +698,13 @@ async function initFirebase(cfg) {
   }
   db = firebase.database();
 
-  storesRef  = db.ref('stores');
-  listsRef   = db.ref('lists');
-  historyRef = db.ref('history');
+  storesRef    = db.ref('stores');
+  listsRef     = db.ref('lists');
+  historyRef   = db.ref('history');
+  recurringRef = db.ref('recurring');
+
+  // Ask for username if not set
+  setTimeout(ensureUsername, 800);
 
   // Seed/update stores based on version
   const STORES_VERSION = "v3-2026";
@@ -637,6 +772,12 @@ async function initFirebase(cfg) {
     STATE.history = val ? Object.values(val) : [];
   });
 
+  recurringRef.on('value', snap => {
+    const val = snap.val();
+    STATE.recurring = val ? Object.values(val) : [];
+    checkRecurring();
+  });
+
   // Connection indicator
   db.ref('.info/connected').on('value', snap => {
     const dot = document.getElementById('sync-dot');
@@ -669,10 +810,15 @@ function toggleItem(id, storeId) {
   const items = toArray((STATE.lists[sid]||{}).items);
   const item  = items.find(i=>i.id===id);
   if (!item) return;
+
+  playTick();
+  vibrate(item.done ? 15 : 35);
+
   if (!item.done) {
     const hEntry = { name: item.name, storeId: sid, at: Date.now() };
     if (item.qty)  hEntry.qty  = item.qty;
     if (item.unit) hEntry.unit = item.unit;
+    if (MY_NAME)   hEntry.by   = MY_NAME;
     historyRef.push(hEntry);
   }
   listsRef.child(sid).child('items').set(items.map(i=> i.id===id ? {...i, done:!i.done} : i));
@@ -836,10 +982,35 @@ function renderStoreBody(store, items) {
     </div>
   </div>`;
 
+  // Smart suggestions
+  const smartSuggestions = getSmartSuggestions(sid, items);
+  if (smartSuggestions.length > 0) {
+    h += `<div class="smart-suggest">
+      <div class="smart-suggest-title">💡 בדרך כלל גם קונים:</div>
+      <div class="smart-suggest-chips">
+        ${smartSuggestions.map(s=>`<button class="smart-chip"
+          onclick="addItemTo('${sid}','${escAttr(s)}')" title="הוסף לרשימה">+ ${escHtml(s)}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Recurring items due
+  const dueRecurring = getDueRecurring(sid, items);
+  if (dueRecurring.length > 0) {
+    h += `<div class="smart-suggest" style="background:linear-gradient(135deg,#fffbeb,#fff);border-color:#fde68a">
+      <div class="smart-suggest-title" style="color:#b45309">🔁 תזכורות חוזרות:</div>
+      <div class="smart-suggest-chips">
+        ${dueRecurring.map(r=>`<button class="smart-chip"
+          style="background:#fff;border-color:#fde68a;color:#b45309"
+          onclick="addRecurringItem('${r.id}','${sid}','${escAttr(r.name)}')" title="הוסף לרשימה">+ ${escHtml(r.name)}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+
   if (!items.length) {
     h += `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">${store.emoji}</div><p>הרשימה ריקה</p></div>`;
   } else {
-    h += `<div class="item-list">${pending.map(i=>renderItem(i,store)).join('')}</div>`;
+    h += `<div class="item-list" id="item-list-${sid}">${pending.map(i=>renderItem(i,store)).join('')}</div>`;
     if (done.length) {
       h += `<div class="done-header"><span class="done-label">✓ נרכש (${done.length})</span>
         <button class="clear-btn" onclick="clearDoneFor('${sid}')">נקה הכל</button></div>
@@ -853,7 +1024,10 @@ function addItemTo(storeId, name) {
   if (!name?.trim()) return;
   const items = toArray((STATE.lists[storeId]||{}).items);
   if (items.find(i=>i.name===name.trim())) { toast('כבר ברשימה ✓'); return; }
-  listsRef.child(storeId).child('items').set([...items, { id:'i'+Date.now(), name:name.trim(), done:false }]);
+  const newItem = { id:'i'+Date.now(), name:name.trim(), done:false };
+  if (MY_NAME) newItem.addedBy = MY_NAME;
+  vibrate(20);
+  listsRef.child(storeId).child('items').set([...items, newItem]);
 }
 
 function clearDoneFor(storeId) {
@@ -873,7 +1047,17 @@ function refreshBody(sid) {
   const store = STATE.stores.find(s=>s.id===sid);
   const items = toArray((STATE.lists[sid]||{}).items);
   const body  = document.getElementById('body-'+sid);
-  if (store && body) body.innerHTML = renderStoreBody(store, items);
+  if (!store || !body) return;
+  // Remember catalog open state + search query before re-render
+  const catWasOpen = !!document.getElementById('cat-panel-'+sid)?.classList.contains('open');
+  body.innerHTML = renderStoreBody(store, items);
+  // Restore catalog open state
+  if (catWasOpen) {
+    const panel = document.getElementById('cat-panel-'+sid);
+    const btn   = document.getElementById('cat-tog-'+sid);
+    if (panel) panel.classList.add('open');
+    if (btn) btn.innerHTML = 'רשימה ▲';
+  }
 }
 
 
@@ -881,8 +1065,21 @@ function renderItem(item, store) {
   const c = store.color;
   const sid = store.id;
   const qtyLabel = item.qty ? `${item.qty} ${item.unit||''}`.trim() : '+ כמות';
+  const byLabel  = item.addedBy ? `<span class="item-added-by">${escHtml(item.addedBy)}</span>` : '';
   return `
-  <div class="item-row${item.done?' done':''}" style="${item.done?'':'border-color:'+c+'40'}">
+  <div class="item-row${item.done?' done':''}"
+    style="${item.done?'':'border-color:'+c+'40'}"
+    draggable="true"
+    ondragstart="dragStart(event,'${item.id}','${sid}')"
+    ondragover="dragOver(event)"
+    ondragend="dragEnd(event)"
+    ondrop="dragDrop(event,'${item.id}','${sid}')"
+    ontouchstart="touchStart(event,'${item.id}','${sid}')"
+    ontouchmove="touchMove(event)"
+    ontouchend="touchEnd(event,'${sid}')">
+    <div class="drag-handle" title="גרור לשינוי סדר">
+      <span></span><span></span><span></span>
+    </div>
     <div class="checkbox${item.done?' checked':''}"
       style="${item.done?'border-color:'+c+';background:'+c:''}"
       onclick="toggleItem('${item.id}','${sid}')">
@@ -890,7 +1087,10 @@ function renderItem(item, store) {
         <path d="M1 4.5l3 3L10 1" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <span class="item-name" onclick="toggleItem('${item.id}','${sid}')">${escHtml(item.name)}</span>
+    <div style="flex:1;min-width:0">
+      <div class="item-name" onclick="toggleItem('${item.id}','${sid}')">${escHtml(item.name)}</div>
+      ${byLabel}
+    </div>
     <button class="qty-badge" style="background:${c}18;color:${c};border-color:${c}40"
       onclick="activeStoreId='${sid}';openQtyEditor('${item.id}')">${escHtml(qtyLabel)}</button>
     <button class="del-btn" onclick="removeItem('${item.id}','${sid}')">×</button>
@@ -1022,7 +1222,10 @@ function openHistory() {
                     + ' ' + d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
       return `<div class="history-item">
         <span>${store?.emoji||'🛍️'}</span>
-        <span class="history-name">${escHtml(h.name)}</span>
+        <div style="flex:1;min-width:0">
+          <div class="history-name">${escHtml(h.name)}</div>
+          ${h.by?`<div style="font-size:10px;color:var(--muted);font-weight:700;margin-top:1px">✓ ${escHtml(h.by)}</div>`:''}
+        </div>
         ${h.qty?`<span class="history-qty" style="background:${store?.color||'#888'}18;color:${store?.color||'#888'}">${h.qty} ${h.unit||''}</span>`:''}
         <span class="history-date">${dateStr}</span>
       </div>`;
@@ -1200,6 +1403,329 @@ function openManageCatalog(storeId) {
 // shortcut
 window.openManageCatalog = openManageCatalog;
 window.openManageStores  = openManageStores;
+
+// ══════════════════════════════════════════════════════════════
+//  SMART HISTORY SUGGESTIONS
+// ══════════════════════════════════════════════════════════════
+function getSmartSuggestions(storeId, currentItems) {
+  if (STATE.history.length < 5) return [];
+  const currentNames = new Set(currentItems.map(i=>i.name));
+  const storeHistory = STATE.history.filter(h=>h.storeId===storeId);
+  if (storeHistory.length < 3) return [];
+
+  // Group purchases by session (within 2 hours of each other)
+  const sessions = [];
+  const sorted = [...storeHistory].sort((a,b)=>a.at-b.at);
+  let session = [sorted[0]];
+  for (let i=1;i<sorted.length;i++) {
+    if (sorted[i].at - sorted[i-1].at < 7200000) session.push(sorted[i]);
+    else { sessions.push(session); session=[sorted[i]]; }
+  }
+  sessions.push(session);
+
+  // Count co-occurrence with items currently in list
+  const score = {};
+  for (const sess of sessions) {
+    const names = sess.map(i=>i.name);
+    const overlap = names.filter(n=>currentNames.has(n));
+    if (overlap.length === 0) continue;
+    for (const name of names) {
+      if (!currentNames.has(name)) {
+        score[name] = (score[name]||0) + overlap.length;
+      }
+    }
+  }
+
+  // Also suggest items not in list that appear frequently
+  const freq = {};
+  for (const h of storeHistory) {
+    if (!currentNames.has(h.name)) freq[h.name] = (freq[h.name]||0) + 1;
+  }
+
+  // Merge: weight co-occurrence more
+  const combined = {};
+  for (const [k,v] of Object.entries(score)) combined[k] = (combined[k]||0) + v*3;
+  for (const [k,v] of Object.entries(freq)) {
+    if (v >= 2) combined[k] = (combined[k]||0) + v;
+  }
+
+  return Object.entries(combined)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,5)
+    .map(([name])=>name);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RECURRING ITEMS
+// ══════════════════════════════════════════════════════════════
+function getDueRecurring(storeId, currentItems) {
+  const now = Date.now();
+  const currentNames = new Set(currentItems.map(i=>i.name));
+  return STATE.recurring.filter(r => {
+    if (r.storeId !== storeId) return false;
+    if (currentNames.has(r.name)) return false;
+    const interval = r.interval === 'daily' ? 86400000 : r.interval === 'weekly' ? 604800000 : 2592000000;
+    return !r.lastAdded || (now - r.lastAdded) >= interval;
+  });
+}
+
+function checkRecurring() {
+  // Auto-add overdue recurring items to lists
+  const now = Date.now();
+  for (const r of STATE.recurring) {
+    if (!r.autoAdd) continue;
+    const interval = r.interval==='daily' ? 86400000 : r.interval==='weekly' ? 604800000 : 2592000000;
+    if (!r.lastAdded || (now - r.lastAdded) >= interval) {
+      addItemTo(r.storeId, r.name);
+      recurringRef.child(r.id).update({ lastAdded: now });
+    }
+  }
+}
+
+window.addRecurringItem = (recurringId, storeId, name) => {
+  addItemTo(storeId, name);
+  recurringRef.child(recurringId).update({ lastAdded: Date.now() });
+};
+
+function openManageRecurring() {
+  const render = () => {
+    const rows = STATE.recurring.map(r => {
+      const store = STATE.stores.find(s=>s.id===r.storeId);
+      const intervalLabel = r.interval==='daily'?'יומי':r.interval==='weekly'?'שבועי':'חודשי';
+      return `<div class="store-row" style="gap:8px">
+        <span style="font-size:16px">${store?.emoji||'🛍️'}</span>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700">${escHtml(r.name)}</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600">${store?.name||''} · ${intervalLabel}</div>
+        </div>
+        <button class="btn-danger btn-sm" onclick="deleteRecurring('${r.id}')">🗑</button>
+      </div>`;
+    }).join('') || `<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;font-weight:600">אין תזכורות עדיין</div>`;
+
+    const storeOptions = STATE.stores.filter(s=>!s.isTaskList).map(s=>
+      `<option value="${s.id}">${s.emoji} ${escHtml(s.name)}</option>`).join('');
+
+    openModal(`
+      <div>${rows}</div>
+      <div class="edit-form" style="margin-top:12px">
+        <div class="edit-form-title">➕ הוסף תזכורת חוזרת</div>
+        <div class="form-group">
+          <label class="form-label">שם מוצר</label>
+          <input class="form-input" id="rec-name" placeholder="למשל: חלב" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">חנות</label>
+          <select class="form-input" id="rec-store">${storeOptions}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">תדירות</label>
+          <select class="form-input" id="rec-interval">
+            <option value="weekly">שבועי</option>
+            <option value="daily">יומי</option>
+            <option value="monthly">חודשי</option>
+          </select>
+        </div>
+        <button class="btn-primary btn-full" style="margin-top:4px" onclick="saveRecurring()">✓ שמור תזכורת</button>
+      </div>
+      <button class="btn-secondary btn-full" style="margin-top:10px" onclick="closeModal()">סגור</button>
+    `, '🔁 תזכורות חוזרות');
+  };
+
+  window.deleteRecurring = (id) => {
+    recurringRef.child(id).remove();
+    toast('נמחק ✓');
+    setTimeout(render, 300);
+  };
+  window.saveRecurring = () => {
+    const name = document.getElementById('rec-name')?.value?.trim();
+    const storeId = document.getElementById('rec-store')?.value;
+    const interval = document.getElementById('rec-interval')?.value;
+    if (!name) { toast('הכנס שם מוצר'); return; }
+    const id = 'rec_' + Date.now();
+    recurringRef.child(id).set({ id, name, storeId, interval, lastAdded: 0 });
+    toast('תזכורת נשמרה ✓');
+    setTimeout(render, 300);
+  };
+
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GLOBAL SEARCH
+// ══════════════════════════════════════════════════════════════
+function globalSearch(q) {
+  const resultsEl = document.getElementById('search-results');
+  const clearBtn  = document.getElementById('search-clear');
+  if (!q.trim()) { clearSearch(); return; }
+  if (clearBtn) clearBtn.style.display = 'block';
+
+  const results = [];
+  for (const store of STATE.stores) {
+    // Search in current list items
+    const items = toArray((STATE.lists[store.id]||{}).items);
+    for (const item of items) {
+      if (item.name.includes(q)) {
+        results.push({ type:'item', store, item });
+      }
+    }
+    // Search in catalog
+    for (const p of (store.catalog||[])) {
+      if (p.includes(q) && !items.find(i=>i.name===p)) {
+        results.push({ type:'catalog', store, name:p });
+      }
+    }
+  }
+
+  if (!resultsEl) return;
+  if (!results.length) {
+    resultsEl.innerHTML = `<div style="padding:14px 16px;color:var(--muted);font-size:13px;font-weight:600;text-align:center">לא נמצא "עגבניות"</div>`.replace('עגבניות', escHtml(q));
+    resultsEl.classList.add('show');
+    return;
+  }
+
+  resultsEl.innerHTML = results.slice(0,12).map(r => {
+    if (r.type === 'item') {
+      const done = r.item.done ? '✓ ' : '';
+      return `<div class="search-result-item" onclick="jumpToStore('${r.store.id}')">
+        <span style="font-size:18px">${r.store.emoji}</span>
+        <div style="flex:1">
+          <div class="search-result-name">${done}${escHtml(r.item.name)}</div>
+          <div class="search-result-store">${escHtml(r.store.name)}</div>
+        </div>
+        <span class="search-result-badge" style="background:${r.store.color}">${r.item.done?'נרכש':'ברשימה'}</span>
+      </div>`;
+    } else {
+      return `<div class="search-result-item" onclick="addItemTo('${r.store.id}','${escAttr(r.name)}');clearSearch()">
+        <span style="font-size:18px">${r.store.emoji}</span>
+        <div style="flex:1">
+          <div class="search-result-name">+ ${escHtml(r.name)}</div>
+          <div class="search-result-store">${escHtml(r.store.name)} · מאגר</div>
+        </div>
+        <span class="search-result-badge" style="background:${r.store.color}">הוסף</span>
+      </div>`;
+    }
+  }).join('');
+  resultsEl.classList.add('show');
+}
+
+function clearSearch() {
+  const inp = document.getElementById('search-input');
+  const resultsEl = document.getElementById('search-results');
+  const clearBtn  = document.getElementById('search-clear');
+  if (inp) inp.value = '';
+  if (resultsEl) { resultsEl.innerHTML=''; resultsEl.classList.remove('show'); }
+  if (clearBtn) clearBtn.style.display = 'none';
+}
+
+function jumpToStore(storeId) {
+  clearSearch();
+  openStores.add(storeId);
+  const sec = document.getElementById('sec-'+storeId);
+  const body = document.getElementById('body-'+storeId);
+  if (sec) sec.classList.add('open');
+  if (body && !body.innerHTML.trim()) {
+    const store = STATE.stores.find(s=>s.id===storeId);
+    const items = toArray((STATE.lists[storeId]||{}).items);
+    if (store) body.innerHTML = renderStoreBody(store, items);
+  }
+  setTimeout(()=>{
+    const el = document.getElementById('sec-'+storeId);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DRAG AND DROP (desktop + touch)
+// ══════════════════════════════════════════════════════════════
+let _dragId = null, _dragSid = null;
+let _touchDragId = null, _touchDragSid = null;
+let _touchClone = null, _touchStartY = 0;
+
+function dragStart(e, id, sid) {
+  _dragId = id; _dragSid = sid;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+function dragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+}
+function dragDrop(e, targetId, targetSid) {
+  e.preventDefault();
+  dragEnd(e);
+  if (!_dragId || _dragSid !== targetSid || _dragId === targetId) return;
+  const items = toArray((STATE.lists[_dragSid]||{}).items);
+  const pending = items.filter(i=>!i.done);
+  const done    = items.filter(i=>i.done);
+  const fromIdx = pending.findIndex(i=>i.id===_dragId);
+  const toIdx   = pending.findIndex(i=>i.id===targetId);
+  if (fromIdx<0||toIdx<0) return;
+  const reordered = [...pending];
+  const [moved] = reordered.splice(fromIdx,1);
+  reordered.splice(toIdx,0,moved);
+  listsRef.child(_dragSid).child('items').set([...reordered, ...done]);
+  _dragId=null; _dragSid=null;
+}
+
+// Touch drag support
+function touchStart(e, id, sid) {
+  if (e.target.classList.contains('drag-handle') ||
+      e.target.closest('.drag-handle')) {
+    _touchDragId = id; _touchDragSid = sid;
+    _touchStartY = e.touches[0].clientY;
+    const row = e.currentTarget;
+    row.classList.add('dragging');
+    // Clone for visual feedback
+    _touchClone = row.cloneNode(true);
+    _touchClone.style.cssText = `position:fixed;left:${row.getBoundingClientRect().left}px;top:${row.getBoundingClientRect().top}px;width:${row.offsetWidth}px;opacity:.85;pointer-events:none;z-index:999;transform:scale(1.02);box-shadow:0 8px 24px rgba(0,0,0,.2);border-radius:14px;`;
+    document.body.appendChild(_touchClone);
+  }
+}
+function touchMove(e) {
+  if (!_touchDragId || !_touchClone) return;
+  e.preventDefault();
+  const dy = e.touches[0].clientY - _touchStartY;
+  _touchClone.style.top = (parseFloat(_touchClone.style.top)+dy)+'px';
+  _touchStartY = e.touches[0].clientY;
+  // Highlight hovered row
+  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+  document.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));
+  const targetRow = el?.closest('.item-row');
+  if (targetRow) targetRow.classList.add('drag-over');
+}
+function touchEnd(e, sid) {
+  if (!_touchDragId || !_touchClone) return;
+  const touch = e.changedTouches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const targetRow = el?.closest('[draggable]');
+
+  _touchClone.remove(); _touchClone = null;
+  document.querySelectorAll('.dragging,.drag-over').forEach(x=>{
+    x.classList.remove('dragging','drag-over');
+  });
+
+  if (targetRow) {
+    const targetId = targetRow.getAttribute('ondrop')?.match(/'([^']+)'/)?.[1];
+    if (targetId && targetId !== _touchDragId) {
+      const items = toArray((STATE.lists[sid]||{}).items);
+      const pending = items.filter(i=>!i.done);
+      const done = items.filter(i=>i.done);
+      const fromIdx = pending.findIndex(i=>i.id===_touchDragId);
+      const toIdx   = pending.findIndex(i=>i.id===targetId);
+      if (fromIdx>=0 && toIdx>=0) {
+        const reordered = [...pending];
+        const [moved] = reordered.splice(fromIdx,1);
+        reordered.splice(toIdx,0,moved);
+        listsRef.child(sid).child('items').set([...reordered, ...done]);
+      }
+    }
+  }
+  _touchDragId=null; _touchDragSid=null;
+}
 
 // ══════════════════════════════════════════════════════════════
 //  UTILS
