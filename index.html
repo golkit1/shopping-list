@@ -534,7 +534,8 @@ async function initFirebase(cfg) {
 
   // Real-time listeners
   storesRef.on('value', snap => {
-    STATE.stores = snap.val() || DEFAULT_STORES;
+    const val = snap.val();
+    STATE.stores = val ? (Array.isArray(val) ? val : Object.values(val)) : DEFAULT_STORES;
     if (!activeStoreId || !STATE.stores.find(s=>s.id===activeStoreId)) {
       activeStoreId = STATE.stores[0]?.id;
     }
@@ -548,7 +549,8 @@ async function initFirebase(cfg) {
     if (changed) scheduleRender();
   });
   historyRef.on('value', snap => {
-    STATE.history = snap.val() ? Object.values(snap.val()) : [];
+    const val = snap.val();
+    STATE.history = val ? Object.values(val) : [];
   });
 
   // Connection indicator
@@ -562,7 +564,13 @@ async function initFirebase(cfg) {
 //  DATA HELPERS
 // ══════════════════════════════════════════════════════════════
 function activeStore() { return STATE.stores.find(s=>s.id===activeStoreId)||STATE.stores[0]; }
-function activeItems() { return (STATE.lists[activeStoreId]||{}).items || []; }
+function toArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  // Firebase converts arrays to objects with numeric keys
+  return Object.values(val);
+}
+function activeItems() { return toArray((STATE.lists[activeStoreId]||{}).items); }
 
 function addItem(name) {
   const items = activeItems();
