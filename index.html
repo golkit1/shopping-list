@@ -475,10 +475,13 @@ const DEFAULT_STORES = [
     catalog:["עגבניות","מלפפונים","פלפלים","בצל","שום","גזר","תפוחי אדמה","חסה","פטרוזיליה","כוסברה","נענע","תרד","ברוקולי","כרובית","זוקיני","חציל","אבוקדו","לימון","תפוח","בננה","ענבים","אבטיח","מלון","תות שדה"] },
   { id:"super", name:"סופר", emoji:"🛒", color:"#1d4e89",
     catalog:["חלב","ביצים","לחם","חמאה","גבינה צהובה","גבינת קוטג'","יוגורט","שמנת חמוצה","שמן זית","קמח","סוכר","מלח","פסטה","אורז","טונה","קפה","תה","שוקולד","עוגיות","דגני בוקר","חומוס","טחינה","מיונז","קטשופ","נייר טואלט"] },
-  { id:"teva", name:"חנות טבע", emoji:"🌿", color:"#7b5e2a",
-    catalog:["שקדים","אגוזי מלך","קשיו","גרעיני חמנייה","תמרים","צימוקים","שיבולת שועל","קינואה","כוסמת","עדשים","טופו","חלב שקדים","דבש","ממרח שקדים","חמאת בוטנים","שמן קוקוס","כורכום","ג'ינג'ר"] },
-  { id:"tambour", name:"טמבור", emoji:"🪣", color:"#9a3412",
-    catalog:["צבע קיר לבן","צבע קיר אפור","מברשת צביעה","גליל צביעה","שפכטל","מסטיק","דבק סיליקון","ברגים","מסמרים","נייר זכוכית","כפפות עבודה","סרט נייר","פריימר","לכה"] },
+  { id:"ras", name:"ראס אל חנות", emoji:"🫙", color:"#b45309",
+    catalog:["זעתר","סומק","כמון","כורכום טחון","פפריקה מתוקה","פפריקה חריפה","קינמון","הל","כוסברה טחונה","מיקס תבלינים","שומשום","עדשים שחורות","פול","עלי גפן","מי ורדים","זיתים שחורים","זיתים ירוקים","טחינה גולמית","חרובים","תמר","לימון מיובש","בהרט","ראס אל חנות תבלין","שמן ארגן","לחם עיראקי"] },
+  { id:"shaarsh", name:"שער שכם", emoji:"🏪", color:"#6b4226",
+    catalog:["עגבניות","מלפפונים","פלפלים","בצל","שום","גזר","תפוחי אדמה","חסה","פטרוזיליה","כוסברה","נענע","תרד","ברוקולי","כרובית","זוקיני","חציל","אבוקדו","לימון","תפוח","בננה","ענבים","אבטיח","מלון","תות שדה","רימון","תאנה","שסק","ג'וזים","אפרסמון","כרוב","שמר","פטריות","צנון","סלרי","אספרגוס","ג'ינג'ר","בטטה","דלעת"] },
+  { id:"adika", name:"עדיקה", emoji:"🧴", color:"#9d174d",
+    catalog:["שמפו","מרכך שיער","ג'ל רחצה","סבון גוף","קרם פנים","קרם גוף","קרם ידיים","משחת שיניים","מברשת שיניים","נוזל פה","דאודורנט","ספריי שיער","מסכת פנים","תחליב שמש","שפתון","מסקרה","אייליינר","מניקור","לק ציפורניים","טמפון","פד","קצף גילוח","אחרי גילוח","צמר גפן","מגבונים","קרם עיניים"] },
+  { id:"tasks", name:"משימות", emoji:"✅", color:"#374151", isTaskList:true, catalog:[] },
 ];
 
 let db, storesRef, listsRef, historyRef;
@@ -486,6 +489,14 @@ let STATE = { stores: [], lists: {}, history: [] };
 let activeStoreId = null;
 let showCatalog = false;
 let catalogQuery = "";
+
+// ── Performance: debounced render ─────────────────────────────
+let _renderPending = false;
+function scheduleRender() {
+  if (_renderPending) return;
+  _renderPending = true;
+  requestAnimationFrame(() => { _renderPending = false; renderAll(); });
+}
 
 // ── Auto-init with hardcoded config ──────────────────────────
 const FIREBASE_CONFIG = {
@@ -512,9 +523,13 @@ async function initFirebase(cfg) {
   listsRef   = db.ref('lists');
   historyRef = db.ref('history');
 
-  // Seed default stores if empty
-  storesRef.once('value', snap => {
-    if (!snap.exists()) storesRef.set(DEFAULT_STORES);
+  // Seed/update stores based on version
+  const STORES_VERSION = "v3-2026";
+  db.ref('storesVersion').once('value', snap => {
+    if (snap.val() !== STORES_VERSION) {
+      storesRef.set(DEFAULT_STORES);
+      db.ref('storesVersion').set(STORES_VERSION);
+    }
   });
 
   // Real-time listeners
@@ -523,11 +538,14 @@ async function initFirebase(cfg) {
     if (!activeStoreId || !STATE.stores.find(s=>s.id===activeStoreId)) {
       activeStoreId = STATE.stores[0]?.id;
     }
-    renderAll();
+    scheduleRender();
   });
   listsRef.on('value', snap => {
-    STATE.lists = snap.val() || {};
-    renderAll();
+    const newLists = snap.val() || {};
+    const newJSON = JSON.stringify(newLists[activeStoreId]);
+    const changed = newJSON !== JSON.stringify(STATE.lists[activeStoreId]);
+    STATE.lists = newLists;
+    if (changed) scheduleRender();
   });
   historyRef.on('value', snap => {
     STATE.history = snap.val() ? Object.values(snap.val()) : [];
@@ -607,8 +625,16 @@ function renderHeader() {
   const totalPending = STATE.stores.reduce((s,st)=> {
     return s + ((STATE.lists[st.id]||{}).items||[]).filter(i=>!i.done).length;
   }, 0);
+  const isTask = activeStore()?.isTaskList;
   const sub = document.getElementById('header-sub');
-  if (sub) sub.textContent = totalPending > 0 ? `${totalPending} מוצרים לרכישה` : 'הכל נרכש! 🎉';
+  if (sub) {
+    if (isTask) {
+      const taskPending = activeItems().filter(i=>!i.done).length;
+      sub.textContent = taskPending > 0 ? `${taskPending} משימות פתוחות` : 'כל המשימות הושלמו! 🎉';
+    } else {
+      sub.textContent = totalPending > 0 ? `${totalPending} מוצרים לרכישה` : 'הכל נרכש! 🎉';
+    }
+  }
 }
 
 function renderTabs() {
@@ -630,6 +656,36 @@ function renderContent() {
   const items = activeItems();
   if (!store) return;
 
+  const c = store.color;
+  const isTask = !!store.isTaskList;
+
+  // ── Task list mode ──
+  if (isTask) {
+    const pending = items.filter(i=>!i.done);
+    const done    = items.filter(i=>i.done);
+    let html = `
+    <div class="quick-add" style="border-color:${c}22">
+      <input id="quick-input" type="text" placeholder="הוסף משימה..."
+        onkeydown="if(event.key==='Enter'){addFromInput()}"
+        autocomplete="off" autocorrect="off">
+      <button class="btn-primary" style="background:${c}" onclick="addFromInput()">+ הוסף</button>
+    </div>`;
+    if (items.length === 0) {
+      html += `<div class="empty-state"><div class="emoji">✅</div><p>אין משימות — הוסף משימה חדשה</p></div>`;
+    } else {
+      html += `<div class="item-list">${pending.map(item=>renderTaskItem(item,store)).join('')}</div>`;
+      if (done.length > 0) {
+        html += `<div class="done-header">
+          <span class="done-label">✓ הושלם (${done.length})</span>
+          <button class="clear-btn" onclick="clearDone()">נקה</button>
+        </div>
+        <div class="item-list" style="opacity:.45">${done.map(item=>renderTaskItem(item,store)).join('')}</div>`;
+      }
+    }
+    document.getElementById('content').innerHTML = html;
+    return;
+  }
+
   const pending = items.filter(i=>!i.done);
   const done    = items.filter(i=>i.done);
 
@@ -637,8 +693,6 @@ function renderContent() {
   const names   = new Set(items.map(i=>i.name));
   const chips   = catalog.filter(p=> p.includes(catalogQuery) && !names.has(p));
 
-  // color helpers (CSS variables via inline)
-  const c = store.color;
   const lightBg = c+'14';
   const lightBorder = c+'2a';
 
@@ -717,6 +771,23 @@ function renderItem(item, store) {
     <span class="item-name" onclick="toggleItem('${item.id}')">${escHtml(item.name)}</span>
     <button class="qty-badge" style="background:${c}14;color:${c};border:1.5px solid ${c}2a"
       onclick="openQtyEditor('${item.id}')">${escHtml(qtyLabel)}</button>
+    <button class="del-btn" onclick="removeItem('${item.id}')">×</button>
+  </div>`;
+}
+
+function renderTaskItem(item, store) {
+  const c = store.color;
+  return `
+  <div class="item-row${item.done?' done':''}" style="${item.done?'':'border-color:'+c+'2a'}">
+    <div class="checkbox${item.done?' checked':''}"
+      style="${item.done?'border-color:'+c+';background:'+c:''}"
+      onclick="toggleItem('${item.id}')">
+      <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+        <path d="M1 4.5l3 3L10 1" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="item-name" style="flex:1;font-size:15px;font-weight:600;cursor:pointer;color:${item.done?'#b0a898':'#1a1209'};text-decoration:${item.done?'line-through':'none'}"
+      onclick="toggleItem('${item.id}')">${escHtml(item.name)}</span>
     <button class="del-btn" onclick="removeItem('${item.id}')">×</button>
   </div>`;
 }
