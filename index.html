@@ -49,10 +49,9 @@
 
   /* ── Header ── */
   #header {
-    background: var(--active-color);
-    padding: 16px 14px 0;
+    background: #1a1209;
+    padding: 14px 14px 14px;
     position: sticky; top: 0; z-index: 50;
-    transition: background .3s ease;
   }
   .header-top {
     display: flex; align-items: flex-start;
@@ -83,47 +82,47 @@
   .sync-dot.saving { background: #facc15; animation: blink 1s infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-  /* ── Tabs ── */
-  .tabs {
-    display: flex; gap: 3px;
-    overflow-x: auto; scrollbar-width: none;
-    padding-bottom: 0;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab-btn {
-    background: rgba(255,255,255,.15);
-    color: rgba(255,255,255,.88);
-    border: none; border-radius: 9px 9px 0 0;
-    padding: 7px 12px;
-    font-size: 13px; font-weight: 700;
-    white-space: nowrap; flex-shrink: 0;
-    display: flex; align-items: center; gap: 5px;
-    transition: background .2s, color .2s;
-  }
-  .tab-btn.active {
-    background: var(--card);
-    color: var(--active-color);
-  }
-  .tab-badge {
-    background: rgba(255,255,255,.22);
-    color: rgba(255,255,255,.95);
-    border-radius: 9px; padding: 0 6px;
-    font-size: 11px; font-weight: 800;
-  }
-  .tab-btn.active .tab-badge {
-    background: var(--active-color);
-    color: #fff;
-    opacity: .2;
-  }
+  /* ── Accordion Stores ── */
+  #stores-list { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; flex: 1; }
 
-  /* ── Content Card ── */
-  #content {
-    background: var(--card);
-    border-radius: 0 0 18px 18px;
-    padding: 14px 13px;
-    box-shadow: 0 5px 20px rgba(0,0,0,.07);
-    flex: 1;
+  .store-section {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    transition: box-shadow .2s;
   }
+  .store-section.open { box-shadow: 0 4px 18px rgba(0,0,0,.12); }
+
+  .store-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 14px;
+    cursor: pointer;
+    -webkit-user-select: none; user-select: none;
+    border: none; width: 100%; text-align: right;
+    transition: filter .15s;
+  }
+  .store-header:active { filter: brightness(.92); }
+
+  .store-header-emoji { font-size: 20px; flex-shrink: 0; }
+  .store-header-name { font-size: 16px; font-weight: 800; color: #fff; flex: 1; }
+  .store-header-badge {
+    background: rgba(255,255,255,.25); color: #fff;
+    border-radius: 12px; padding: 2px 9px;
+    font-size: 12px; font-weight: 800; flex-shrink: 0;
+  }
+  .store-header-arrow {
+    color: rgba(255,255,255,.7); font-size: 13px; flex-shrink: 0;
+    transition: transform .25s;
+  }
+  .store-section.open .store-header-arrow { transform: rotate(180deg); }
+
+  .store-body {
+    background: var(--card);
+    max-height: 0; overflow: hidden;
+    transition: max-height .3s ease;
+  }
+  .store-section.open .store-body { max-height: 2000px; }
+  .store-body-inner { padding: 12px 13px 14px; }
 
   /* ── Quick-Add ── */
   .quick-add {
@@ -443,18 +442,17 @@
       <div class="header-actions">
         <div class="sync-dot" id="sync-dot" title="סטטוס חיבור"></div>
         <button class="hbtn" onclick="openHistory()">📋</button>
-        <button class="hbtn" onclick="openManageStores()">⚙️ חנויות</button>
+        <button class="hbtn" onclick="openManageStores()">⚙️</button>
       </div>
     </div>
-    <div class="tabs" id="tabs"></div>
   </div>
 
-  <!-- Content -->
-  <div id="content">
+  <!-- Accordion store list -->
+  <div id="stores-list">
     <div class="empty-state"><div class="emoji">⏳</div><p>טוען...</p></div>
   </div>
 
-  <div id="footer">🔴 חי — מסתנכרן בזמן אמת עם כל בני המשפחה</div>
+  <div id="footer">🟢 חי — מסתנכרן בזמן אמת</div>
 </div>
 
 <!-- Toast -->
@@ -539,14 +537,50 @@ async function initFirebase(cfg) {
     if (!activeStoreId || !STATE.stores.find(s=>s.id===activeStoreId)) {
       activeStoreId = STATE.stores[0]?.id;
     }
-    scheduleRender();
+    renderHeader();
+    renderAccordion();
   });
   listsRef.on('value', snap => {
     const newLists = snap.val() || {};
-    const newJSON = JSON.stringify(newLists[activeStoreId]);
-    const changed = newJSON !== JSON.stringify(STATE.lists[activeStoreId]);
+    // Find which stores changed and refresh only those
+    const changedStores = new Set();
+    STATE.stores.forEach(s => {
+      if (JSON.stringify(newLists[s.id]) !== JSON.stringify(STATE.lists[s.id])) {
+        changedStores.add(s.id);
+      }
+    });
     STATE.lists = newLists;
-    if (changed) scheduleRender();
+    if (changedStores.size === 0) return;
+    // Refresh header count
+    renderHeader();
+    // Refresh open store bodies + their badges
+    changedStores.forEach(sid => {
+      const store = STATE.stores.find(s=>s.id===sid);
+      const items = toArray((STATE.lists[sid]||{}).items);
+      const pending = items.filter(i=>!i.done);
+      // Update badge in header button
+      const sec = document.getElementById('sec-'+sid);
+      if (sec) {
+        const badge = sec.querySelector('.store-header-badge');
+        if (pending.length > 0) {
+          if (badge) badge.textContent = pending.length;
+          else {
+            const arrow = sec.querySelector('.store-header-arrow');
+            if (arrow) {
+              const b = document.createElement('span');
+              b.className = 'store-header-badge';
+              b.textContent = pending.length;
+              sec.querySelector('.store-header').insertBefore(b, arrow);
+            }
+          }
+        } else if (badge) badge.remove();
+      }
+      // Refresh body if open
+      if (openStores.has(sid) && store) {
+        const body = document.getElementById('body-'+sid);
+        if (body) body.innerHTML = renderStoreBody(store, items);
+      }
+    });
   });
   historyRef.on('value', snap => {
     const val = snap.val();
@@ -573,41 +607,40 @@ function toArray(val) {
 function activeItems() { return toArray((STATE.lists[activeStoreId]||{}).items); }
 
 function addItem(name) {
+  const sid = activeStoreId;
   const items = activeItems();
   if (items.find(i=>i.name===name)) { toast('כבר ברשימה ✓'); return; }
-  const newItem = { id: 'i'+Date.now(), name, done: false, qty: null, unit: null };
-  const newItems = [...items, newItem];
-  listsRef.child(activeStoreId).child('items').set(newItems);
+  const newItem = { id: 'i'+Date.now(), name, done: false };
+  listsRef.child(sid).child('items').set([...items, newItem]);
 }
 
-function toggleItem(id) {
-  const items = activeItems();
+function toggleItem(id, storeId) {
+  const sid   = storeId || activeStoreId;
+  const items = toArray((STATE.lists[sid]||{}).items);
   const item  = items.find(i=>i.id===id);
   if (!item) return;
   if (!item.done) {
-    const hEntry = { name: item.name, storeId: activeStoreId, at: Date.now() };
+    const hEntry = { name: item.name, storeId: sid, at: Date.now() };
     if (item.qty)  hEntry.qty  = item.qty;
     if (item.unit) hEntry.unit = item.unit;
     historyRef.push(hEntry);
   }
-  const updated = items.map(i=> i.id===id ? {...i, done:!i.done} : i);
-  listsRef.child(activeStoreId).child('items').set(updated);
+  listsRef.child(sid).child('items').set(items.map(i=> i.id===id ? {...i, done:!i.done} : i));
 }
 
-function removeItem(id) {
-  const updated = activeItems().filter(i=>i.id!==id);
-  listsRef.child(activeStoreId).child('items').set(updated);
+function removeItem(id, storeId) {
+  const sid = storeId || activeStoreId;
+  listsRef.child(sid).child('items').set(toArray((STATE.lists[sid]||{}).items).filter(i=>i.id!==id));
 }
 
 function clearDone() {
-  const updated = activeItems().filter(i=>!i.done);
-  listsRef.child(activeStoreId).child('items').set(updated);
+  listsRef.child(activeStoreId).child('items').set(toArray((STATE.lists[activeStoreId]||{}).items).filter(i=>!i.done));
   closeModal();
 }
 
-function updateQty(id, qty, unit) {
-  const updated = activeItems().map(i=> i.id===id ? {...i, qty, unit} : i);
-  listsRef.child(activeStoreId).child('items').set(updated);
+function updateQty(id, qty, unit, storeId) {
+  const sid = storeId || activeStoreId;
+  listsRef.child(sid).child('items').set(toArray((STATE.lists[sid]||{}).items).map(i=> i.id===id ? {...i, qty, unit} : i));
 }
 
 function saveStores(stores) { storesRef.set(stores); }
@@ -621,197 +654,216 @@ function saveCatalog(storeId, catalog) {
 // ══════════════════════════════════════════════════════════════
 function renderAll() {
   renderHeader();
-  renderTabs();
-  renderContent();
+  renderAccordion();
 }
 
 function renderHeader() {
-  const store = activeStore();
-  if (!store) return;
-  document.getElementById('header').style.background = store.color;
-  document.querySelector('meta[name="theme-color"]').content = store.color;
-
   const totalPending = STATE.stores.reduce((s,st)=> {
-    return s + ((STATE.lists[st.id]||{}).items||[]).filter(i=>!i.done).length;
+    return s + toArray((STATE.lists[st.id]||{}).items).filter(i=>!i.done).length;
   }, 0);
-  const isTask = activeStore()?.isTaskList;
   const sub = document.getElementById('header-sub');
-  if (sub) {
-    if (isTask) {
-      const taskPending = activeItems().filter(i=>!i.done).length;
-      sub.textContent = taskPending > 0 ? `${taskPending} משימות פתוחות` : 'כל המשימות הושלמו! 🎉';
-    } else {
-      sub.textContent = totalPending > 0 ? `${totalPending} מוצרים לרכישה` : 'הכל נרכש! 🎉';
-    }
-  }
+  if (sub) sub.textContent = totalPending > 0 ? `${totalPending} פריטים ממתינים` : 'הכל בוצע! 🎉';
 }
 
-function renderTabs() {
-  const el = document.getElementById('tabs');
+// Track which stores are open
+const openStores = new Set();
+
+function renderAccordion() {
+  const el = document.getElementById('stores-list');
   if (!el) return;
-  el.innerHTML = STATE.stores.map(s => {
-    const cnt = ((STATE.lists[s.id]||{}).items||[]).filter(i=>!i.done).length;
-    const act = s.id === activeStoreId;
-    return `<button class="tab-btn${act?' active':''}" onclick="switchTab('${s.id}')">
-      <span>${s.emoji}</span>
-      <span>${s.name}</span>
-      ${cnt>0?`<span class="tab-badge">${cnt}</span>`:''}
-    </button>`;
+
+  // Auto-open first store on first render
+  if (openStores.size === 0 && STATE.stores.length > 0) {
+    openStores.add(STATE.stores[0].id);
+  }
+
+  el.innerHTML = STATE.stores.map(store => {
+    const items   = toArray((STATE.lists[store.id]||{}).items);
+    const pending = items.filter(i=>!i.done);
+    const isOpen  = openStores.has(store.id);
+
+    return `
+    <div class="store-section${isOpen?' open':''}" id="sec-${store.id}">
+      <button class="store-header" style="background:${store.color}"
+        onclick="toggleSection('${store.id}')">
+        <span class="store-header-emoji">${store.emoji}</span>
+        <span class="store-header-name">${escHtml(store.name)}</span>
+        ${pending.length>0?`<span class="store-header-badge">${pending.length}</span>`:''}
+        <span class="store-header-arrow">▼</span>
+      </button>
+      <div class="store-body">
+        <div class="store-body-inner" id="body-${store.id}">
+          ${isOpen ? renderStoreBody(store, items) : ''}
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
 
-function renderContent() {
-  const store = activeStore();
-  const items = activeItems();
-  if (!store) return;
+function toggleSection(storeId) {
+  const sec  = document.getElementById('sec-'+storeId);
+  const body = document.getElementById('body-'+storeId);
+  if (!sec) return;
 
-  const c = store.color;
-  const isTask = !!store.isTaskList;
-
-  // ── Task list mode ──
-  if (isTask) {
-    const pending = items.filter(i=>!i.done);
-    const done    = items.filter(i=>i.done);
-    let html = `
-    <div class="quick-add" style="border-color:${c}22">
-      <input id="quick-input" type="text" placeholder="הוסף משימה..."
-        onkeydown="if(event.key==='Enter'){addFromInput()}"
-        autocomplete="off" autocorrect="off">
-      <button class="btn-primary" style="background:${c}" onclick="addFromInput()">+ הוסף</button>
-    </div>`;
-    if (items.length === 0) {
-      html += `<div class="empty-state"><div class="emoji">✅</div><p>אין משימות — הוסף משימה חדשה</p></div>`;
-    } else {
-      html += `<div class="item-list">${pending.map(item=>renderTaskItem(item,store)).join('')}</div>`;
-      if (done.length > 0) {
-        html += `<div class="done-header">
-          <span class="done-label">✓ הושלם (${done.length})</span>
-          <button class="clear-btn" onclick="clearDone()">נקה</button>
-        </div>
-        <div class="item-list" style="opacity:.45">${done.map(item=>renderTaskItem(item,store)).join('')}</div>`;
-      }
+  if (openStores.has(storeId)) {
+    openStores.delete(storeId);
+    sec.classList.remove('open');
+  } else {
+    openStores.add(storeId);
+    sec.classList.add('open');
+    activeStoreId = storeId;
+    // Lazy-render body content
+    if (body && !body.innerHTML.trim()) {
+      const store = STATE.stores.find(s=>s.id===storeId);
+      const items = toArray((STATE.lists[storeId]||{}).items);
+      if (store) body.innerHTML = renderStoreBody(store, items);
     }
-    document.getElementById('content').innerHTML = html;
-    return;
   }
+}
 
+function renderStoreBody(store, items) {
+  const c       = store.color;
+  const isTask  = !!store.isTaskList;
   const pending = items.filter(i=>!i.done);
   const done    = items.filter(i=>i.done);
+  const sid     = store.id;
 
-  const catalog = store.catalog || [];
-  const names   = new Set(items.map(i=>i.name));
-  const chips   = catalog.filter(p=> p.includes(catalogQuery) && !names.has(p));
+  // Task mode
+  if (isTask) {
+    let h = `<div class="quick-add" style="border-color:${c}22">
+      <input type="text" placeholder="הוסף משימה..." id="qi-${sid}"
+        onkeydown="if(event.key==='Enter'){addItemTo('${sid}',this.value);this.value=''}"
+        autocomplete="off">
+      <button class="btn-primary" style="background:${c}"
+        onclick="addItemTo('${sid}',document.getElementById('qi-${sid}').value);document.getElementById('qi-${sid}').value=''">+ הוסף</button>
+    </div>`;
+    if (!items.length) {
+      h += `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">✅</div><p>אין משימות עדיין</p></div>`;
+    } else {
+      h += `<div class="item-list">${pending.map(i=>renderTaskItem(i,store)).join('')}</div>`;
+      if (done.length) h += `<div class="done-header"><span class="done-label">✓ הושלם (${done.length})</span>
+        <button class="clear-btn" onclick="clearDoneFor('${sid}')">נקה</button></div>
+        <div class="item-list" style="opacity:.45">${done.map(i=>renderTaskItem(i,store)).join('')}</div>`;
+    }
+    return h;
+  }
 
-  const lightBg = c+'14';
-  const lightBorder = c+'2a';
+  // Shopping mode
+  const catalog  = store.catalog || [];
+  const names    = new Set(items.map(i=>i.name));
+  const isOpen   = !!document.getElementById('cat-panel-${sid}')?.classList.contains('open');
+  const lightBg  = c+'14', lightBorder = c+'2a';
+  const catQuery = window['catQ_'+sid] || '';
+  const chips    = catalog.filter(p=>p.includes(catQuery) && !names.has(p));
 
-  let html = `
-  <!-- Quick add -->
-  <div class="quick-add" style="border-color:${c}22">
-    <input id="quick-input" type="text" placeholder="הוסף מוצר..."
-      onkeydown="if(event.key==='Enter'){addFromInput()}"
-      autocomplete="off" autocorrect="off">
-    <button class="btn-primary" style="background:${c}" onclick="addFromInput()">+ הוסף</button>
-    <button class="btn-ghost" style="border-color:${c};color:${c};${showCatalog?'background:'+c+';color:#fff':''}"
-      onclick="toggleCatalog()">רשימה ${showCatalog?'▲':'▼'}</button>
+  let h = `<div class="quick-add" style="border-color:${c}22">
+    <input type="text" placeholder="הוסף מוצר..." id="qi-${sid}"
+      onkeydown="if(event.key==='Enter'){addItemTo('${sid}',this.value);this.value=''}"
+      autocomplete="off">
+    <button class="btn-primary" style="background:${c}"
+      onclick="addItemTo('${sid}',document.getElementById('qi-${sid}').value);document.getElementById('qi-${sid}').value=''">+ הוסף</button>
+    <button id="cat-tog-${sid}" class="btn-ghost" style="border-color:${c};color:${c}"
+      onclick="toggleCatalogFor('${sid}')">רשימה ▼</button>
   </div>
-
-  <!-- Catalog -->
-  <div class="catalog-panel${showCatalog?' open':''}">
+  <div class="catalog-panel" id="cat-panel-${sid}">
     <div class="catalog-search-row">
-      <input type="text" placeholder="🔍 חיפוש במאגר..." value="${escHtml(catalogQuery)}"
-        oninput="catalogQuery=this.value;renderContent()"
-        style="border-color:${c}44">
+      <input type="text" placeholder="🔍 חיפוש..." id="cat-q-${sid}"
+        oninput="window['catQ_${sid}']=this.value;refreshBody('${sid}')"
+        value="${escHtml(catQuery)}" style="border-color:${c}44">
       <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
-        onclick="openManageCatalog('${store.id}')">✏️ ערוך</button>
+        onclick="openManageCatalog('${sid}')">✏️ ערוך</button>
     </div>
     <div class="catalog-chips">
-      ${chips.map(p=>`
-        <button class="chip" style="background:${lightBg};color:${c};border:1.5px solid ${lightBorder}"
-          onclick="addItem('${escAttr(p)}')"
-          onmouseenter="this.style.background='${c}';this.style.color='#fff'"
-          onmouseleave="this.style.background='${lightBg}';this.style.color='${c}'">
-          + ${escHtml(p)}
-        </button>`).join('')}
-      ${chips.length===0?`<span style="color:#bbb;font-size:13px">${catalogQuery?'לא נמצא':'כל המוצרים ברשימה ✓'}</span>`:''}
+      ${chips.map(p=>`<button class="chip"
+        style="background:${lightBg};color:${c};border:1.5px solid ${lightBorder}"
+        onclick="addItemTo('${sid}','${escAttr(p)}')"
+        onmouseenter="this.style.background='${c}';this.style.color='#fff'"
+        onmouseleave="this.style.background='${lightBg}';this.style.color='${c}'">+ ${escHtml(p)}</button>`).join('')}
+      ${!chips.length?`<span style="color:#bbb;font-size:13px">${catQuery?'לא נמצא':'הכל ברשימה ✓'}</span>`:''}
     </div>
   </div>`;
 
-  // Item list
-  if (items.length === 0) {
-    html += `<div class="empty-state">
-      <div class="emoji">${store.emoji}</div>
-      <p>הרשימה ריקה — הוסף מוצרים</p>
-    </div>`;
+  if (!items.length) {
+    h += `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">${store.emoji}</div><p>הרשימה ריקה</p></div>`;
   } else {
-    html += `<div class="item-list">
-      ${pending.map(item=>renderItem(item, store)).join('')}
-    </div>`;
-    if (done.length > 0) {
-      html += `<div class="done-header">
-        <span class="done-label">✓ נרכש (${done.length})</span>
-        <button class="clear-btn" onclick="clearDone()">נקה הכל</button>
-      </div>
-      <div class="item-list" style="opacity:.5">
-        ${done.map(item=>renderItem(item, store)).join('')}
-      </div>`;
+    h += `<div class="item-list">${pending.map(i=>renderItem(i,store)).join('')}</div>`;
+    if (done.length) {
+      h += `<div class="done-header"><span class="done-label">✓ נרכש (${done.length})</span>
+        <button class="clear-btn" onclick="clearDoneFor('${sid}')">נקה הכל</button></div>
+        <div class="item-list" style="opacity:.5">${done.map(i=>renderItem(i,store)).join('')}</div>`;
     }
   }
-
-  document.getElementById('content').innerHTML = html;
-
-  // Focus quick input if was focused
-  const qi = document.getElementById('quick-input');
-  if (qi && document.activeElement && document.activeElement.id==='quick-input') qi.focus();
+  return h;
 }
+
+function addItemTo(storeId, name) {
+  if (!name?.trim()) return;
+  const items = toArray((STATE.lists[storeId]||{}).items);
+  if (items.find(i=>i.name===name.trim())) { toast('כבר ברשימה ✓'); return; }
+  listsRef.child(storeId).child('items').set([...items, { id:'i'+Date.now(), name:name.trim(), done:false }]);
+}
+
+function clearDoneFor(storeId) {
+  const items = toArray((STATE.lists[storeId]||{}).items).filter(i=>!i.done);
+  listsRef.child(storeId).child('items').set(items);
+}
+
+function toggleCatalogFor(sid) {
+  const panel = document.getElementById('cat-panel-'+sid);
+  const btn   = document.getElementById('cat-tog-'+sid);
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if (btn) btn.innerHTML = `רשימה ${isOpen?'▲':'▼'}`;
+}
+
+function refreshBody(sid) {
+  const store = STATE.stores.find(s=>s.id===sid);
+  const items = toArray((STATE.lists[sid]||{}).items);
+  const body  = document.getElementById('body-'+sid);
+  if (store && body) body.innerHTML = renderStoreBody(store, items);
+}
+
 
 function renderItem(item, store) {
   const c = store.color;
+  const sid = store.id;
   const qtyLabel = item.qty ? `${item.qty} ${item.unit||''}`.trim() : '+ כמות';
   return `
   <div class="item-row${item.done?' done':''}" style="${item.done?'':'border-color:'+c+'2a'}">
     <div class="checkbox${item.done?' checked':''}"
       style="${item.done?'border-color:'+c+';background:'+c:''}"
-      onclick="toggleItem('${item.id}')">
+      onclick="toggleItem('${item.id}','${sid}')">
       <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
         <path d="M1 4.5l3 3L10 1" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <span class="item-name" onclick="toggleItem('${item.id}')">${escHtml(item.name)}</span>
+    <span class="item-name" onclick="toggleItem('${item.id}','${sid}')">${escHtml(item.name)}</span>
     <button class="qty-badge" style="background:${c}14;color:${c};border:1.5px solid ${c}2a"
-      onclick="openQtyEditor('${item.id}')">${escHtml(qtyLabel)}</button>
-    <button class="del-btn" onclick="removeItem('${item.id}')">×</button>
+      onclick="activeStoreId='${sid}';openQtyEditor('${item.id}')">${escHtml(qtyLabel)}</button>
+    <button class="del-btn" onclick="removeItem('${item.id}','${sid}')">×</button>
   </div>`;
 }
 
 function renderTaskItem(item, store) {
   const c = store.color;
+  const sid = store.id;
   return `
   <div class="item-row${item.done?' done':''}" style="${item.done?'':'border-color:'+c+'2a'}">
     <div class="checkbox${item.done?' checked':''}"
       style="${item.done?'border-color:'+c+';background:'+c:''}"
-      onclick="toggleItem('${item.id}')">
+      onclick="toggleItem('${item.id}','${sid}')">
       <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
         <path d="M1 4.5l3 3L10 1" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
     <span class="item-name" style="flex:1;font-size:15px;font-weight:600;cursor:pointer;color:${item.done?'#b0a898':'#1a1209'};text-decoration:${item.done?'line-through':'none'}"
-      onclick="toggleItem('${item.id}')">${escHtml(item.name)}</span>
-    <button class="del-btn" onclick="removeItem('${item.id}')">×</button>
+      onclick="toggleItem('${item.id}','${sid}')">${escHtml(item.name)}</span>
+    <button class="del-btn" onclick="removeItem('${item.id}','${sid}')">×</button>
   </div>`;
 }
 
-function switchTab(id) {
-  activeStoreId = id;
-  showCatalog = false;
-  catalogQuery = '';
-  renderAll();
-}
-function toggleCatalog() { showCatalog = !showCatalog; renderContent(); }
-function addFromInput() {
-  const inp = document.getElementById('quick-input');
-  if (inp && inp.value.trim()) { addItem(inp.value.trim()); inp.value=''; }
-}
+// (legacy functions removed - using per-store accordion now)
+
 
 // ══════════════════════════════════════════════════════════════
 //  MODALS
@@ -842,8 +894,9 @@ function closeModal() {
 
 // ── Qty Editor ──
 function openQtyEditor(itemId) {
-  const item  = activeItems().find(i=>i.id===itemId);
   const store = activeStore();
+  const items = toArray((STATE.lists[activeStoreId]||{}).items);
+  const item  = items.find(i=>i.id===itemId);
   if (!item) return;
   const qty  = item.qty  || 1;
   const unit = item.unit || "יח'";
@@ -886,7 +939,7 @@ function saveQty(itemId) {
   const inp = document.getElementById('qty-val');
   const qty = Math.max(1, parseInt(inp?.value)||1);
   const unit = _selectedUnit || document.querySelector('.unit-chip[style*="color: rgb"]')?.textContent.trim() || "יח'";
-  updateQty(itemId, qty, unit);
+  updateQty(itemId, qty, unit, activeStoreId);
   closeModal();
   _selectedUnit = null;
 }
