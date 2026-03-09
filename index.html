@@ -585,8 +585,9 @@ function toggleItem(id) {
   const item  = items.find(i=>i.id===id);
   if (!item) return;
   if (!item.done) {
-    // Record in history
-    const hEntry = { name:item.name, storeId:activeStoreId, qty:item.qty, unit:item.unit, at: Date.now() };
+    const hEntry = { name: item.name, storeId: activeStoreId, at: Date.now() };
+    if (item.qty)  hEntry.qty  = item.qty;
+    if (item.unit) hEntry.unit = item.unit;
     historyRef.push(hEntry);
   }
   const updated = items.map(i=> i.id===id ? {...i, done:!i.done} : i);
