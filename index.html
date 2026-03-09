@@ -650,21 +650,6 @@ window.saveUsername = () => {
   toast('שלום ' + v + '! 👋');
 };
 
-// ── Sound ──────────────────────────────────────────────
-let _audioCtx = null;
-function playTick() {
-  try {
-    if (!_audioCtx) _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const o = _audioCtx.createOscillator();
-    const g = _audioCtx.createGain();
-    o.connect(g); g.connect(_audioCtx.destination);
-    o.frequency.setValueAtTime(880, _audioCtx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(440, _audioCtx.currentTime + .08);
-    g.gain.setValueAtTime(.18, _audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001, _audioCtx.currentTime + .12);
-    o.start(); o.stop(_audioCtx.currentTime + .12);
-  } catch(e) {}
-}
 function vibrate(ms) {
   try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {}
 }
@@ -760,10 +745,9 @@ async function initFirebase(cfg) {
           }
         } else if (badge) badge.remove();
       }
-      // Refresh body if open
+      // Refresh body if open - uses refreshBody to preserve catalog/open state
       if (openStores.has(sid) && store) {
-        const body = document.getElementById('body-'+sid);
-        if (body) body.innerHTML = renderStoreBody(store, items);
+        refreshBody(sid);
       }
     });
   });
@@ -811,7 +795,6 @@ function toggleItem(id, storeId) {
   const item  = items.find(i=>i.id===id);
   if (!item) return;
 
-  playTick();
   vibrate(item.done ? 15 : 35);
 
   if (!item.done) {
@@ -1035,12 +1018,24 @@ function clearDoneFor(storeId) {
   listsRef.child(storeId).child('items').set(items);
 }
 
+// Track catalog open state in memory (not DOM) so refreshBody never loses it
+const openCatalogs = new Set();
+
 function toggleCatalogFor(sid) {
-  const panel = document.getElementById('cat-panel-'+sid);
-  const btn   = document.getElementById('cat-tog-'+sid);
-  if (!panel) return;
-  const isOpen = panel.classList.toggle('open');
-  if (btn) btn.innerHTML = `רשימה ${isOpen?'▲':'▼'}`;
+  if (openCatalogs.has(sid)) {
+    openCatalogs.delete(sid);
+  } else {
+    openCatalogs.add(sid);
+  }
+  _applyCatalogState(sid);
+}
+
+function _applyCatalogState(sid) {
+  const isOpen = openCatalogs.has(sid);
+  const panel  = document.getElementById('cat-panel-'+sid);
+  const btn    = document.getElementById('cat-tog-'+sid);
+  if (panel) panel.classList.toggle('open', isOpen);
+  if (btn)   btn.innerHTML = `רשימה ${isOpen ? '▲' : '▼'}`;
 }
 
 function refreshBody(sid) {
@@ -1048,16 +1043,9 @@ function refreshBody(sid) {
   const items = toArray((STATE.lists[sid]||{}).items);
   const body  = document.getElementById('body-'+sid);
   if (!store || !body) return;
-  // Remember catalog open state + search query before re-render
-  const catWasOpen = !!document.getElementById('cat-panel-'+sid)?.classList.contains('open');
   body.innerHTML = renderStoreBody(store, items);
-  // Restore catalog open state
-  if (catWasOpen) {
-    const panel = document.getElementById('cat-panel-'+sid);
-    const btn   = document.getElementById('cat-tog-'+sid);
-    if (panel) panel.classList.add('open');
-    if (btn) btn.innerHTML = 'רשימה ▲';
-  }
+  // Restore catalog state from memory (not DOM — DOM was just replaced)
+  _applyCatalogState(sid);
 }
 
 
