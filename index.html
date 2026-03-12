@@ -962,6 +962,7 @@ function toggleSection(storeId) {
     sec.classList.remove('open');
   } else {
     openStores.add(storeId);
+    openCatalogs.add(storeId);  // auto-open catalog panel with store
     sec.classList.add('open');
     activeStoreId = storeId;
     // Lazy-render body content
@@ -970,6 +971,7 @@ function toggleSection(storeId) {
       const items = toArray((STATE.lists[storeId]||{}).items);
       if (store) body.innerHTML = renderStoreBody(store, items);
     }
+    setTimeout(() => _applyCatalogState(storeId), 50);
   }
 }
 
@@ -1009,22 +1011,16 @@ function renderStoreBody(store, items) {
   const chips    = catalog.filter(p=>p.includes(catQuery) && !names.has(p));
 
   let h = `<div class="quick-add" style="border-color:${c}22">
-    <input type="text" placeholder="הוסף מוצר..." id="qi-${sid}"
-      onkeydown="if(event.key==='Enter'){addItemTo('${sid}',this.value);this.value=''}"
-      autocomplete="off">
+    <input type="text" placeholder="חיפוש / הוספת מוצר..." id="qi-${sid}"
+      oninput="filterCatalogChips('${sid}',this.value)"
+      onkeydown="if(event.key==='Enter'){unifiedAdd('${sid}');}"
+      autocomplete="off" value="${escHtml(catQuery)}">
     <button class="btn-primary" style="background:${c}"
-      onclick="addItemTo('${sid}',document.getElementById('qi-${sid}').value);document.getElementById('qi-${sid}').value=''">+ הוסף</button>
-    <button id="cat-tog-${sid}" class="btn-ghost" style="border-color:${c};color:${c}"
-      onclick="toggleCatalogFor('${sid}')">רשימה ▼</button>
+      onclick="unifiedAdd('${sid}')">+ הוסף</button>
+    <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
+      onclick="openManageCatalog('${sid}')">✏️</button>
   </div>
   <div class="catalog-panel" id="cat-panel-${sid}">
-    <div class="catalog-search-row">
-      <input type="text" placeholder="🔍 חיפוש..." id="cat-q-${sid}"
-        oninput="filterCatalogChips('${sid}',this.value)"
-        value="${escHtml(catQuery)}" style="border-color:${c}44">
-      <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
-        onclick="openManageCatalog('${sid}')">✏️ ערוך</button>
-    </div>
     <div class="catalog-chips" style="flex-direction:column;align-items:stretch">
       ${renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store)}
     </div>
@@ -1095,6 +1091,25 @@ function clearDoneFor(storeId) {
 
 // Track catalog open state in memory (not DOM) so refreshBody never loses it
 const openCatalogs = new Set();
+
+function unifiedAdd(sid) {
+  const inp = document.getElementById('qi-'+sid);
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) return;
+  addItemTo(sid, val);
+  inp.value = '';
+  window['catQ_'+sid] = '';
+  // Refresh chips to show full catalog again
+  const store = STATE.stores.find(s=>s.id===sid);
+  if (!store) return;
+  const items = toArray((STATE.lists[sid]||{}).items);
+  const names = new Set(items.map(i=>i.name));
+  const c = store.color;
+  const chips = (store.catalog||[]).filter(p=>!names.has(p));
+  const chipsContainer = document.querySelector(`#cat-panel-${sid} .catalog-chips`);
+  if (chipsContainer) chipsContainer.innerHTML = renderCatalogChipsGrouped(chips, sid, c, c+'14', c+'2a', store);
+}
 
 function filterCatalogChips(sid, query) {
   // Save query in memory
