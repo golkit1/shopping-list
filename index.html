@@ -1020,7 +1020,7 @@ function renderStoreBody(store, items) {
   <div class="catalog-panel" id="cat-panel-${sid}">
     <div class="catalog-search-row">
       <input type="text" placeholder="🔍 חיפוש..." id="cat-q-${sid}"
-        oninput="window['catQ_${sid}']=this.value;refreshBody('${sid}')"
+        oninput="filterCatalogChips('${sid}',this.value)"
         value="${escHtml(catQuery)}" style="border-color:${c}44">
       <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
         onclick="openManageCatalog('${sid}')">✏️ ערוך</button>
@@ -1095,6 +1095,27 @@ function clearDoneFor(storeId) {
 
 // Track catalog open state in memory (not DOM) so refreshBody never loses it
 const openCatalogs = new Set();
+
+function filterCatalogChips(sid, query) {
+  // Save query in memory
+  window['catQ_'+sid] = query;
+
+  const store  = STATE.stores.find(s=>s.id===sid);
+  if (!store) return;
+  const items  = toArray((STATE.lists[sid]||{}).items);
+  const names  = new Set(items.map(i=>i.name));
+  const c      = store.color;
+  const lightBg    = c+'14';
+  const lightBorder = c+'2a';
+  const catalog = store.catalog || [];
+  const chips  = catalog.filter(p => p.includes(query) && !names.has(p));
+
+  // Only replace the chips container, not the whole body
+  const chipsContainer = document.querySelector(`#cat-panel-${sid} .catalog-chips`);
+  if (!chipsContainer) return;
+
+  chipsContainer.innerHTML = renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store);
+}
 
 function toggleCatalogFor(sid) {
   if (openCatalogs.has(sid)) {
