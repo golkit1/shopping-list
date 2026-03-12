@@ -513,9 +513,13 @@
   }
   .smart-suggest-title {
     font-size: 11px; font-weight: 800; color: #6674aa;
-    margin-bottom: 7px; letter-spacing: .4px;
+    letter-spacing: .4px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    margin-bottom: 0;
   }
-  .smart-suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .smart-suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+  .smart-suggest-chips.ss-hidden { display: none; margin-top: 0; }
   .smart-chip {
     background: #fff; border: 1.5px solid #c8d0f0;
     border-radius: 16px; padding: 5px 11px;
@@ -984,11 +988,15 @@ function renderStoreBody(store, items) {
   // Smart suggestions
   const smartSuggestions = getSmartSuggestions(sid, items);
   if (smartSuggestions.length > 0) {
+    const ssOpen = window['ssOpen_'+sid] !== false;
     h += `<div class="smart-suggest">
-      <div class="smart-suggest-title">💡 בדרך כלל גם קונים:</div>
-      <div class="smart-suggest-chips">
+      <div class="smart-suggest-title" onclick="toggleSuggest('${sid}')">
+        <span>💡 בדרך כלל גם קונים:</span>
+        <span id="ss-tog-${sid}" style="font-size:10px;color:#9298B0;font-weight:700">${ssOpen?'הסתר ▲':'הצג ▼'}</span>
+      </div>
+      <div class="smart-suggest-chips${ssOpen?'':' ss-hidden'}" id="ss-chips-${sid}">
         ${smartSuggestions.map(s=>`<button class="smart-chip"
-          onclick="addItemTo('${sid}','${escAttr(s)}')" title="הוסף לרשימה">+ ${escHtml(s)}</button>`).join('')}
+          onclick="addItemTo('${sid}','${escAttr(s)}')">+ ${escHtml(s)}</button>`).join('')}
       </div>
     </div>`;
   }
@@ -1052,6 +1060,15 @@ function _applyCatalogState(sid) {
   const btn    = document.getElementById('cat-tog-'+sid);
   if (panel) panel.classList.toggle('open', isOpen);
   if (btn)   btn.innerHTML = `רשימה ${isOpen ? '▲' : '▼'}`;
+}
+
+function toggleSuggest(sid) {
+  const chips = document.getElementById('ss-chips-'+sid);
+  const tog   = document.getElementById('ss-tog-'+sid);
+  if (!chips) return;
+  const nowHidden = chips.classList.toggle('ss-hidden');
+  window['ssOpen_'+sid] = !nowHidden;
+  if (tog) tog.textContent = nowHidden ? 'הצג ▼' : 'הסתר ▲';
 }
 
 function refreshBody(sid) {
@@ -1244,9 +1261,25 @@ function openHistory() {
       </div>`;
     }).join('');
 
+    const clearBtn = STATE.history.length > 0 ? `
+      <div style="text-align:center;margin-top:16px;padding-bottom:4px">
+        <button onclick="confirmClearHistory()"
+          style="background:none;border:1.5px solid #fca5a5;color:#e53e3e;border-radius:10px;
+                 padding:8px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">
+          🗑 אפס היסטוריה והצעות חכמות
+        </button>
+      </div>` : '';
+
     return filters + (shown.length===0
-      ? `<div style="text-align:center;padding:24px 0;color:#bbb;font-size:14px">אין היסטוריה עדיין</div>`
-      : `<div>${items}</div>`);
+      ? `<div style="text-align:center;padding:24px 0;color:#bbb;font-size:14px">אין היסטוריה עדיין</div>${clearBtn}`
+      : `<div>${items}</div>${clearBtn}`);
+  };
+
+  window.confirmClearHistory = () => {
+    if (!confirm('למחוק את כל ההיסטוריה?\nההצעות החכמות יתאפסו גם כן.')) return;
+    historyRef.remove();
+    toast('היסטוריה נמחקה ✓');
+    closeModal();
   };
 
   window.histFilter = (id) => {
