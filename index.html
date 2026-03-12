@@ -1014,6 +1014,7 @@ function renderStoreBody(store, items) {
     <input type="text" placeholder="חיפוש / הוספת מוצר..." id="qi-${sid}"
       oninput="filterCatalogChips('${sid}',this.value)"
       onkeydown="if(event.key==='Enter'){unifiedAdd('${sid}');}"
+      onfocus="openCatalogs.add('${sid}');_applyCatalogState('${sid}')"
       autocomplete="off" value="${escHtml(catQuery)}">
     <button class="btn-primary" style="background:${c}"
       onclick="unifiedAdd('${sid}')">+ הוסף</button>
