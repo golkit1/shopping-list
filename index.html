@@ -578,6 +578,22 @@
   }
   .username-input:focus { border-color: var(--border2); }
 
+  /* ── Room Switcher ── */
+  .room-list-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: 14px;
+    background: var(--white); border: 1.5px solid var(--border);
+    margin-bottom: 8px; cursor: pointer;
+    transition: border-color .15s;
+  }
+  .room-list-item:hover { border-color: var(--border2); }
+  .room-list-item.active { border-color: #1B4F8A; background: #f0f5ff; }
+  .room-list-emoji { font-size: 22px; }
+  .room-list-info { flex: 1; }
+  .room-list-code { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: 1px; }
+  .room-list-name { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 1px; }
+  .room-list-del { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; }
+
   /* ── Room Screen ── */
   #room-screen {
     position: fixed; inset: 0; z-index: 99998;
@@ -667,6 +683,7 @@
         <button class="hbtn" onclick="openHistory()">📋</button>
         <button class="hbtn" onclick="openManageRecurring()">🔁</button>
         <button class="hbtn" onclick="openManageStores()">⚙️</button>
+        <button class="hbtn" id="room-btn" onclick="openRoomSwitcher()" title="החלף חדר">🏠</button>
       </div>
     </div>
   </div>
@@ -984,6 +1001,7 @@ function toggleSection(storeId) {
 
   if (openStores.has(storeId)) {
     openStores.delete(storeId);
+    openCatalogs.delete(storeId);
     sec.classList.remove('open');
   } else {
     openStores.add(storeId);
@@ -2072,11 +2090,26 @@ function escAttr(s) {
 // ══════════════════════════════════════════════════════════════
 //  ROOM CODE — separate Firebase namespace per family
 // ══════════════════════════════════════════════════════════════
-const ROOM_KEY = 'mkt-room-v1';
+const ROOM_KEY       = 'mkt-room-v1';
+const SAVED_ROOMS_KEY = 'mkt-saved-rooms-v1';
 
-function roomGet()    { return localStorage.getItem(ROOM_KEY) || ''; }
-function roomSet(r)   { localStorage.setItem(ROOM_KEY, r); }
-function roomForget() { localStorage.removeItem(ROOM_KEY); location.reload(); }
+function roomGet()  { return localStorage.getItem(ROOM_KEY) || ''; }
+function roomSet(r) { localStorage.setItem(ROOM_KEY, r); }
+
+function savedRoomsGet() {
+  try { return JSON.parse(localStorage.getItem(SAVED_ROOMS_KEY) || '[]'); } catch { return []; }
+}
+function savedRoomsSave(rooms) {
+  localStorage.setItem(SAVED_ROOMS_KEY, JSON.stringify(rooms));
+}
+function savedRoomsAdd(code, nickname) {
+  const rooms = savedRoomsGet().filter(r => r.code !== code);
+  rooms.unshift({ code, nickname: nickname || code });
+  savedRoomsSave(rooms.slice(0, 10));
+}
+function savedRoomsRemove(code) {
+  savedRoomsSave(savedRoomsGet().filter(r => r.code !== code));
+}
 
 function roomGenerate() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -2089,19 +2122,118 @@ function roomJoin() {
   const code = (document.getElementById('room-input')?.value||'').trim().toUpperCase();
   const err  = document.getElementById('room-err');
   if (!code || code.length < 3) { err.textContent = 'קוד חייב להיות לפחות 3 תווים'; return; }
-  roomSet(code);
-  document.getElementById('room-screen').style.display = 'none';
-  // Re-init Firebase with the room prefix
-  initFirebaseWithRoom(code);
-  // Show app (PIN will handle further auth if needed)
-  document.getElementById('app').style.display = '';
-  showPinIfNeeded();
+  switchToRoom(code);
 }
+
+function switchToRoom(code, nickname) {
+  roomSet(code);
+  savedRoomsAdd(code, nickname);
+  // Reset app state
+  STATE = { stores: [], lists: {}, history: [], recurring: [] };
+  openStores.clear(); openCatalogs.clear();
+  // Detach old listeners
+  if (db) {
+    try { storesRef?.off(); listsRef?.off(); historyRef?.off(); recurringRef?.off(); } catch(e){}
+  }
+  document.getElementById('room-screen').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  document.getElementById('stores-list').innerHTML = '<div class="empty-state"><div class="emoji">⏳</div><p>טוען...</p></div>';
+  initFirebaseWithRoom(code);
+  updateRoomBtnLabel(code);
+}
+
+function updateRoomBtnLabel(code) {
+  const btn = document.getElementById('room-btn');
+  if (btn) btn.title = 'חדר: ' + code;
+}
+
+// ── Room Switcher Modal ──
+function openRoomSwitcher() {
+  const current = roomGet();
+  const saved   = savedRoomsGet();
+
+  const renderSavedRooms = () => saved.map(r => `
+    <div class="room-list-item${r.code===current?' active':''}" onclick="roomQuickSwitch('${r.code}')">
+      <span class="room-list-emoji">${r.code===current?'✅':'🏠'}</span>
+      <div class="room-list-info">
+        <div class="room-list-code">${r.code}</div>
+        <div class="room-list-name">${r.code===current?'פעיל כעת':escHtml(r.nickname||r.code)}</div>
+      </div>
+      <button class="room-list-del" onclick="event.stopPropagation();roomRemoveSaved('${r.code}')" title="הסר">✕</button>
+    </div>`).join('');
+
+  openModal(`
+    <div style="direction:rtl">
+      ${saved.length > 0 ? `
+        <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;margin-bottom:10px">חדרים שמורים</div>
+        ${renderSavedRooms()}
+        <div style="margin:16px 0 10px;border-top:1.5px solid var(--border)"></div>
+      ` : ''}
+      <div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;margin-bottom:10px">כניסה לחדר חדש</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input id="rs-code" type="text" maxlength="12" placeholder="קוד חדר..."
+          style="border:2px solid var(--border);border-radius:12px;padding:12px;font-size:16px;
+                 font-weight:800;text-align:center;letter-spacing:2px;font-family:inherit;
+                 outline:none;direction:ltr;background:var(--bg);color:var(--text);transition:border-color .2s"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+          onfocus="this.style.borderColor='#1B4F8A'"
+          onblur="this.style.borderColor=''"
+          onkeydown="if(event.key==='Enter')roomSwitchNew()">
+        <input id="rs-name" type="text" maxlength="20" placeholder="שם לזיהוי (אופציונלי)..."
+          style="border:2px solid var(--border);border-radius:12px;padding:10px;font-size:14px;
+                 font-family:inherit;outline:none;direction:rtl;background:var(--bg);color:var(--text)">
+        <button onclick="roomSwitchNew()"
+          style="background:#1B4F8A;color:#fff;border:none;border-radius:12px;padding:13px;
+                 font-size:15px;font-weight:800;font-family:inherit;cursor:pointer">
+          כניסה / יצירה →
+        </button>
+        <button onclick="roomSwitchRandom()"
+          style="background:none;border:2px solid var(--border);border-radius:12px;padding:10px;
+                 font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--text2)">
+          ✨ צור קוד אקראי
+        </button>
+      </div>
+      <div id="rs-err" style="color:#e53e3e;font-size:13px;font-weight:700;margin-top:8px;min-height:18px"></div>
+    </div>
+  `, '🏠 החלפת חדר');
+}
+
+window.roomQuickSwitch = (code) => {
+  if (code === roomGet()) { closeModal(); return; }
+  closeModal();
+  switchToRoom(code);
+  toast('עברת לחדר ' + code + ' ✓');
+};
+
+window.roomRemoveSaved = (code) => {
+  savedRoomsRemove(code);
+  if (code === roomGet()) { roomSet(''); location.reload(); return; }
+  openRoomSwitcher(); // re-render modal
+};
+
+window.roomSwitchNew = () => {
+  const code = (document.getElementById('rs-code')?.value||'').trim().toUpperCase();
+  const name = (document.getElementById('rs-name')?.value||'').trim();
+  const err  = document.getElementById('rs-err');
+  if (!code || code.length < 3) { err.textContent = 'קוד חייב להיות לפחות 3 תווים'; return; }
+  closeModal();
+  switchToRoom(code, name || code);
+  toast('עברת לחדר ' + code + ' ✓');
+};
+
+window.roomSwitchRandom = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  const inp = document.getElementById('rs-code');
+  if (inp) inp.value = code;
+};
 
 function roomInit() {
   const code = roomGet();
   if (code) {
-    // Already have a room
+    // Already have a room — ensure it's in saved list
+    savedRoomsAdd(code, code);
     document.getElementById('app').style.display = '';
     showPinIfNeeded();
     initFirebaseWithRoom(code);
@@ -2124,13 +2256,10 @@ function initFirebaseWithRoom(roomCode) {
   historyRef   = db.ref(base + '/history');
   recurringRef = db.ref(base + '/recurring');
 
-  // Show room code subtly in footer
+  // Update footer and header
   const footer = document.getElementById('footer');
   if (footer) footer.innerHTML = `🏠 חדר: <strong>${roomCode}</strong> &nbsp;·&nbsp; 🟡 מסתנכרן בזמן אמת`;
-
-  // Show "switch room" link on room screen if ever needed
-  const sw = document.getElementById('room-switch');
-  if (sw) { sw.style.display = 'block'; sw.textContent = 'קוד נוכחי: ' + roomCode + ' (החלף)'; }
+  updateRoomBtnLabel(roomCode);
 
   // Ask for username, seed stores, start listeners
   setTimeout(ensureUsername, 800);
@@ -2229,7 +2358,7 @@ function pinInit() {
 
 // Called from roomInit after room is known
 function showPinIfNeeded() {
-  pinInit();
+  // PIN disabled — room code is the only protection needed
 }
 
 function pinPress(digit) {
