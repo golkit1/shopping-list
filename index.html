@@ -1080,7 +1080,7 @@ function renderStoreBody(store, items) {
     <input type="text" placeholder="חיפוש / הוספת מוצר..." id="qi-${sid}"
       oninput="filterCatalogChips('${sid}',this.value)"
       onkeydown="if(event.key==='Enter'){unifiedAdd('${sid}');}"
-      onfocus="if(!openCatalogs.has('${sid}')){openCatalogs.add('${sid}');toggleCatalogFor('${sid}');}"
+      onfocus="openCatalog('${sid}')"
       autocomplete="off" value="${escHtml(catQuery)}">
     <button class="btn-primary" style="background:${c}"
       onclick="unifiedAdd('${sid}')">+ הוסף</button>
@@ -1205,6 +1205,23 @@ function filterCatalogChips(sid, query) {
   if (!chipsContainer) return;
 
   chipsContainer.innerHTML = renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store);
+}
+
+function openCatalog(sid) {
+  if (openCatalogs.has(sid)) return; // already open
+  openCatalogs.add(sid);
+  // Render chips fresh
+  const store = STATE.stores.find(s=>s.id===sid);
+  if (store) {
+    const items = toArray((STATE.lists[sid]||{}).items);
+    const names = new Set(items.map(i=>i.name));
+    const c     = store.color;
+    const query = window["catQ_"+sid] || "";
+    const chips = (store.catalog||[]).filter(p=>p.includes(query) && !names.has(p));
+    const box   = document.querySelector("#cat-panel-"+sid+" .catalog-chips");
+    if (box) box.innerHTML = renderCatalogChipsGrouped(chips, sid, c, c+"14", c+"2a", store);
+  }
+  _applyCatalogState(sid);
 }
 
 function toggleCatalogFor(sid) {
