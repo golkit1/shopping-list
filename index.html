@@ -121,6 +121,21 @@
     box-shadow: var(--shadow-lg);
     border-color: var(--border2);
   }
+  .store-section.store-dragging {
+    opacity: .4; transform: scale(.98);
+  }
+  .store-section.store-drag-over {
+    border-color: #1B4F8A !important;
+    box-shadow: 0 0 0 2px #1B4F8A44;
+  }
+  .store-drag-handle {
+    cursor: grab; color: rgba(255,255,255,.55);
+    font-size: 14px; padding: 0 4px; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 3px; align-items: center;
+    touch-action: none;
+  }
+  .store-drag-handle:active { cursor: grabbing; }
+  .store-drag-handle span { display: block; width: 16px; height: 2px; background: currentColor; border-radius: 2px; }
 
   .store-header {
     display: flex; align-items: center; gap: 12px;
@@ -960,11 +975,6 @@ function renderAccordion() {
   const el = document.getElementById('stores-list');
   if (!el) return;
 
-  // Auto-open first store on first render
-  if (openStores.size === 0 && STATE.stores.length > 0) {
-    openStores.add(STATE.stores[0].id);
-  }
-
   el.innerHTML = STATE.stores.map(store => {
     const items   = toArray((STATE.lists[store.id]||{}).items);
     const pending = items.filter(i=>!i.done);
@@ -972,8 +982,22 @@ function renderAccordion() {
 
     return `
     <div class="store-section${isOpen?' open':''}" id="sec-${store.id}">
-      <button class="store-header" style="background:${store.color}"
-        onclick="toggleSection('${store.id}')">
+      <div class="store-header" style="background:${store.color}"
+        ondragstart="storeDragStart(event,'${store.id}')"
+        ondragover="storeDragOver(event,'${store.id}')"
+        ondragleave="storeDragLeave(event,'${store.id}')"
+        ondrop="storeDrop(event,'${store.id}')"
+        ondragend="storeDragEnd(event)"
+        draggable="false">
+        <div class="store-drag-handle" draggable="true"
+          ondragstart="event.stopPropagation();storeDragStart(event,'${store.id}')"
+          ontouchstart="storeTouchStart(event,'${store.id}')"
+          ontouchmove="storeTouchMove(event)"
+          ontouchend="storeTouchEnd(event)">
+          <span></span><span></span><span></span>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;gap:12px;min-width:0;cursor:pointer"
+          onclick="toggleSection('${store.id}')">
         <span class="store-header-emoji">${store.emoji}</span>
         <div class="store-header-info">
           <div class="store-header-name" style="color:#fff">${escHtml(store.name)}</div>
@@ -981,7 +1005,8 @@ function renderAccordion() {
         </div>
         ${pending.length>0?`<span class="store-header-badge">${pending.length}</span>`:''}
         <span class="store-header-arrow">▼</span>
-      </button>
+        </div>
+      </div>
       <div class="store-body">
         <div class="store-body-inner" id="body-${store.id}">
           ${isOpen ? renderStoreBody(store, items) : ''}
@@ -1984,6 +2009,55 @@ function jumpToStore(storeId) {
 
 // ══════════════════════════════════════════════════════════════
 //  DRAG AND DROP (desktop + touch)
+// ══════════════════════════════════════════════════════════════
+//  DRAG & DROP (stores)
+// ══════════════════════════════════════════════════════════════
+let _storeDragId = null;
+
+function storeDragStart(e, sid) {
+  _storeDragId = sid;
+  setTimeout(() => document.getElementById('sec-'+sid)?.classList.add('store-dragging'), 0);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function storeDragOver(e, sid) {
+  if (!_storeDragId || _storeDragId === sid) return;
+  e.preventDefault();
+  document.querySelectorAll('.store-section').forEach(s => s.classList.remove('store-drag-over'));
+  document.getElementById('sec-'+sid)?.classList.add('store-drag-over');
+}
+function storeDragLeave(e, sid) { document.getElementById('sec-'+sid)?.classList.remove('store-drag-over'); }
+function storeDrop(e, targetId) {
+  e.preventDefault();
+  if (!_storeDragId || _storeDragId === targetId) return;
+  const stores = [...STATE.stores];
+  const fi = stores.findIndex(s=>s.id===_storeDragId);
+  const ti = stores.findIndex(s=>s.id===targetId);
+  if (fi<0||ti<0) return;
+  stores.splice(ti, 0, stores.splice(fi,1)[0]);
+  saveStores(stores);
+  storeDragEnd();
+}
+function storeDragEnd() {
+  document.querySelectorAll('.store-section').forEach(s => s.classList.remove('store-dragging','store-drag-over'));
+  _storeDragId = null;
+}
+let _stTouchId=null, _stTouchEl=null;
+function storeTouchStart(e,sid){ _stTouchId=sid; _stTouchEl=document.getElementById('sec-'+sid); e.stopPropagation(); }
+function storeTouchMove(e){
+  if(!_stTouchId)return; e.preventDefault();
+  const t=e.touches[0], el=document.elementFromPoint(t.clientX,t.clientY)?.closest('.store-section');
+  document.querySelectorAll('.store-section').forEach(s=>s.classList.remove('store-drag-over'));
+  if(el && el.id!=='sec-'+_stTouchId){ el.classList.add('store-drag-over'); _stTouchEl?.classList.add('store-dragging'); }
+}
+function storeTouchEnd(e){
+  if(!_stTouchId)return;
+  const t=e.changedTouches[0], sec=document.elementFromPoint(t.clientX,t.clientY)?.closest('.store-section');
+  const tid=sec?.id?.replace('sec-','');
+  if(tid&&tid!==_stTouchId) storeDrop({preventDefault:()=>{}},tid);
+  document.querySelectorAll('.store-section').forEach(s=>s.classList.remove('store-dragging','store-drag-over'));
+  _stTouchId=null; _stTouchEl=null;
+}
+
 // ══════════════════════════════════════════════════════════════
 let _dragId = null, _dragSid = null;
 let _touchDragId = null, _touchDragSid = null;
