@@ -981,16 +981,14 @@ function renderAccordion() {
     const isOpen  = openStores.has(store.id);
 
     return `
-    <div class="store-section${isOpen?' open':''}" id="sec-${store.id}">
-      <div class="store-header" style="background:${store.color}"
-        ondragstart="storeDragStart(event,'${store.id}')"
-        ondragover="storeDragOver(event,'${store.id}')"
-        ondragleave="storeDragLeave(event,'${store.id}')"
-        ondrop="storeDrop(event,'${store.id}')"
-        ondragend="storeDragEnd(event)"
-        draggable="false">
+    <div class="store-section${isOpen?' open':''}" id="sec-${store.id}"
+      ondragover="storeDragOver(event,'${store.id}')"
+      ondragleave="storeDragLeave(event,'${store.id}')"
+      ondrop="storeDrop(event,'${store.id}')">
+      <div class="store-header" style="background:${store.color}">
         <div class="store-drag-handle" draggable="true"
-          ondragstart="event.stopPropagation();storeDragStart(event,'${store.id}')"
+          ondragstart="storeDragStart(event,'${store.id}')"
+          ondragend="storeDragEnd()"
           ontouchstart="storeTouchStart(event,'${store.id}')"
           ontouchmove="storeTouchMove(event)"
           ontouchend="storeTouchEnd(event)">
@@ -2016,12 +2014,14 @@ let _storeDragId = null;
 
 function storeDragStart(e, sid) {
   _storeDragId = sid;
-  setTimeout(() => document.getElementById('sec-'+sid)?.classList.add('store-dragging'), 0);
   e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', sid);
+  setTimeout(() => document.getElementById('sec-'+sid)?.classList.add('store-dragging'), 10);
 }
 function storeDragOver(e, sid) {
-  if (!_storeDragId || _storeDragId === sid) return;
   e.preventDefault();
+  e.stopPropagation();
+  if (!_storeDragId || _storeDragId === sid) return;
   document.querySelectorAll('.store-section').forEach(s => s.classList.remove('store-drag-over'));
   document.getElementById('sec-'+sid)?.classList.add('store-drag-over');
 }
