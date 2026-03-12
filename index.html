@@ -680,7 +680,7 @@
     <button class="pin-btn del" onclick="pinDel()">⌫</button>
   </div>
   <div class="pin-error" id="pin-error"></div>
-  <div class="pin-set-link" id="pin-admin-link" style="display:none" onclick="pinAdmin()">שנה קוד PIN</div>
+  <div class="pin-set-link" id="pin-admin-link" onclick="pinAdmin()">שנה קוד PIN</div>
 </div>
 
 <!-- Toast -->
@@ -1087,7 +1087,7 @@ function renderStoreBody(store, items) {
       onclick="openManageCatalog('${sid}')">✏️</button>
   </div>
   <div class="catalog-panel" id="cat-panel-${sid}">
-    <div class="catalog-chips" style="flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:4px">
+    <div class="catalog-chips">
       ${renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store)}
     </div>
   </div>`;
