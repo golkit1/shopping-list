@@ -1080,12 +1080,10 @@ function renderStoreBody(store, items) {
     <input type="text" placeholder="חיפוש / הוספת מוצר..." id="qi-${sid}"
       oninput="filterCatalogChips('${sid}',this.value)"
       onkeydown="if(event.key==='Enter'){unifiedAdd('${sid}');}"
-      
+      onfocus="if(!openCatalogs.has('${sid}')){openCatalogs.add('${sid}');toggleCatalogFor('${sid}');}"
       autocomplete="off" value="${escHtml(catQuery)}">
     <button class="btn-primary" style="background:${c}"
       onclick="unifiedAdd('${sid}')">+ הוסף</button>
-    <button id="cat-tog-${sid}" class="btn-ghost" style="border-color:${c};color:${c}"
-      onclick="toggleCatalogFor('${sid}')">מאגר ▼</button>
     <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
       onclick="openManageCatalog('${sid}')">✏️</button>
   </div>
