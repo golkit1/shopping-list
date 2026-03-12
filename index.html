@@ -1172,16 +1172,35 @@ function unifiedAdd(sid) {
   if (!inp) return;
   const val = inp.value.trim();
   if (!val) return;
-  addItemTo(sid, val);
-  inp.value = '';
-  window['catQ_'+sid] = '';
-  // Refresh chips to show full catalog again
+
+  // Auto-add to catalog if not already there
   const store = STATE.stores.find(s=>s.id===sid);
+  if (store && !(store.catalog||[]).includes(val)) {
+    const updatedCatalog = [...(store.catalog||[]), val];
+    storesRef.once('value', snap => {
+      const all = snap.val();
+      const arr = all ? (Array.isArray(all) ? all : Object.values(all)) : [];
+      const idx = arr.findIndex(s=>s.id===sid);
+      if (idx >= 0) {
+        arr[idx].catalog = updatedCatalog;
+        storesRef.set(arr);
+      }
+    });
+  }
+
+  addItemTo(sid, val);
+
+  // Clear input
+  inp.value = '';
+  inp.focus();
+  window['catQ_'+sid] = '';
+
+  // Refresh chips
   if (!store) return;
   const items = toArray((STATE.lists[sid]||{}).items);
   const names = new Set(items.map(i=>i.name));
   const c = store.color;
-  const chips = (store.catalog||[]).filter(p=>!names.has(p));
+  const chips = (store.catalog||[]).filter(p=>!names.has(p) && p !== val);
   const chipsContainer = document.querySelector(`#cat-panel-${sid} .catalog-chips`);
   if (chipsContainer) chipsContainer.innerHTML = renderCatalogChipsGrouped(chips, sid, c, c+'14', c+'2a', store);
 }
