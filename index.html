@@ -2424,37 +2424,32 @@ function attachListeners() {
     renderAccordion();
   });
   listsRef.on('value', snap => {
-    const newLists = snap.val() || {};
-    const changedStores = new Set();
-    STATE.stores.forEach(s => {
-      if (JSON.stringify(newLists[s.id]) !== JSON.stringify(STATE.lists[s.id])) {
-        changedStores.add(s.id);
-      }
-    });
-    STATE.lists = newLists;
-    if (changedStores.size === 0) return;
+    STATE.lists = snap.val() || {};
     renderHeader();
-    changedStores.forEach(sid => {
+    // Refresh all open stores
+    openStores.forEach(sid => {
       const store = STATE.stores.find(s=>s.id===sid);
-      const items = toArray((STATE.lists[sid]||{}).items);
+      if (store) refreshBody(sid);
+    });
+    // Update badges on all stores
+    STATE.stores.forEach(s => {
+      const items   = toArray((STATE.lists[s.id]||{}).items);
       const pending = items.filter(i=>!i.done);
-      const sec = document.getElementById('sec-'+sid);
-      if (sec) {
-        const badge = sec.querySelector('.store-header-badge');
-        if (pending.length > 0) {
-          if (badge) badge.textContent = pending.length;
-          else {
-            const arrow = sec.querySelector('.store-header-arrow');
-            if (arrow) {
-              const b = document.createElement('span');
-              b.className = 'store-header-badge';
-              b.textContent = pending.length;
-              sec.querySelector('.store-header').insertBefore(b, arrow);
-            }
+      const sec = document.getElementById('sec-'+s.id);
+      if (!sec) return;
+      const badge = sec.querySelector('.store-header-badge');
+      if (pending.length > 0) {
+        if (badge) badge.textContent = pending.length;
+        else {
+          const arrow = sec.querySelector('.store-header-arrow');
+          if (arrow) {
+            const b = document.createElement('span');
+            b.className = 'store-header-badge';
+            b.textContent = pending.length;
+            sec.querySelector('.store-header').insertBefore(b, arrow);
           }
-        } else if (badge) badge.remove();
-      }
-      if (openStores.has(sid) && store) refreshBody(sid);
+        }
+      } else if (badge) badge.remove();
     });
   });
   historyRef.on('value', snap => {
