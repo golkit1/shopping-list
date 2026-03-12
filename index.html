@@ -462,6 +462,22 @@
     color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .3px;
   }
 
+  /* ── Category groups ── */
+  .cat-group-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 2px 4px;
+    font-size: 11px; font-weight: 800; color: var(--muted);
+    letter-spacing: .5px; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .cat-group-header:first-child { margin-top: 0; padding-top: 2px; }
+  .cat-group-header span { opacity: .7; }
+  .cat-chips-group { margin-bottom: 10px; }
+  .cat-chips-group-title {
+    font-size: 11px; font-weight: 800; color: var(--muted);
+    margin-bottom: 5px; letter-spacing: .4px;
+  }
+
   /* ── Global Search ── */
   #search-bar {
     display: flex; align-items: center; gap: 8px;
@@ -615,6 +631,38 @@
 const EMOJIS  = ["🥬","🛒","🌿","🪣","🧴","🍕","🥩","🐟","🧁","🧹","💊","📦","🏠","🌸","🍷","🔧","🎨","🌾","🍳","🛍️","🐾","📚","💄","🎵","🥐","🫙","🧃","🧂"];
 const COLORS  = ["#2d6a4f","#1d4e89","#7b5e2a","#9a3412","#6b21a8","#0f766e","#be123c","#0369a1","#4d7c0f","#b45309","#374151","#7c3aed","#0e7490","#9d174d","#b91c1c","#0c4a6e"];
 const UNITS   = ["יח'","קג","גרם","ליטר","מ\"ל","אריזה","חבילה","כוס","כפית","כף","מטר"];
+
+// ── Category auto-detection ──────────────────────
+const CATEGORY_KEYWORDS = {
+  "🥦 ירקות":     ["עגבני","מלפפ","פלפל","בצל","שום","גזר","תפוחי אדמה","חסה","פטרוזיל","כוסברה","נענע","תרד","ברוקולי","כרובית","זוקיני","חציל","צנון","סלרי","אספרגוס","ג'ינג'ר","בטטה","דלעת","כרוב","שמר","פטרי"],
+  "🍎 פירות":     ["תפוח","בננה","ענבים","אבטיח","מלון","תות","רימון","תאנה","שסק","אפרסמון","ג'וז","לימון","אבוקד","פרי","אוכמניות","מנגו","אננס","קיווי","אגס","שזיף","דובדבן"],
+  "🥛 חלב וביצים":["חלב","ביצ","חמאה","גבינ","יוגורט","שמנת","קוטג'","לאבנה","ריקוטה","מוצרלה"],
+  "🍞 לחם ואפייה":["לחם","פיתה","בגט","חלה","טורטייה","לחמנייה","קמח","שמרים","אבקת אפייה","וניל"],
+  "🧴 שמנים ורטבים":["שמן","חומץ","רוטב","קטשופ","מיונז","חרדל","טחינ","חומוס","ממרח","דבש","ריבה"],
+  "🫙 שימורים":   ["שימור","טונה","פחית","זית","חמוצ","כבוש","עגבניות מרוסקות","קורנישון"],
+  "🌾 קטניות ודגנים":["אורז","פסטה","עדשים","פול","חומוס יבש","שעועית","כוסמת","קינואה","שיבולת שועל","קורנפלקס","דגני"],
+  "🧂 תבלינים":   ["מלח","פלפל שחור","כמון","כורכום","פפריקה","קינמון","הל","זעתר","סומק","בהרט","שומשום","עשבי","תבלין","ג'ינג'ר טחון"],
+  "🍬 ממתקים":    ["שוקולד","עוגיה","ביסקו","סוכריה","גומי","קרם","וופל","עוגה","ממתק","דגנים מתוק"],
+  "☕ שתייה":     ["קפה","תה","מיץ","מים","סודה","קולה","ספרייט","בירה","יין","משקה"],
+  "🧹 ניקיון":    ["נייר טואלט","מגבת נייר","ניקוי","אקונומיקה","סבון כלים","אבקת כביסה","מרכך כביסה","שקית","זבל","ספוג","מטאטא","סמרטוט"],
+  "💊 בריאות":    ["תרופ","ויטמין","מינרל","אספירין","פרצטמול","בינטן","אנטיביוטי"],
+  "💄 קוסמטיקה":  ["שמפו","מרכך","קרם","סבון","דאודור","ספריי","מסקרה","ליפסטיק","שפתון","אייליינר","פאודר","בלאש","צלליות","פרימר"],
+  "🦷 היגיינה":   ["משחת שיניים","מברשת שיניים","חוט דנטלי","נוזל פה","גילוח","תחליב"],
+  "🩸 היגיינה נשית":["טמפון","פד","וסת"],
+  "🐾 חיות מחמד": ["מזון לכלב","מזון לחתול","חול לחתול","כיבוד"],
+  "📦 כללי":      []
+};
+
+function guessCategory(name) {
+  const n = name.toLowerCase();
+  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (cat === '📦 כללי') continue;
+    for (const kw of keywords) {
+      if (n.includes(kw) || kw.includes(n.substring(0,3))) return cat;
+    }
+  }
+  return '📦 כללי';
+}
 const DEFAULT_STORES = [
   { id:"shuk", name:"שוק", emoji:"🥬", color:"#2D7A4F",
     catalog:["עגבניות","מלפפונים","פלפלים","בצל","שום","גזר","תפוחי אדמה","חסה","פטרוזיליה","כוסברה","נענע","תרד","ברוקולי","כרובית","זוקיני","חציל","אבוקדו","לימון","תפוח","בננה","ענבים","אבטיח","מלון","תות שדה"] },
@@ -840,8 +888,10 @@ function updateQty(id, qty, unit, storeId) {
 }
 
 function saveStores(stores) { storesRef.set(stores); }
-function saveCatalog(storeId, catalog) {
-  const stores = STATE.stores.map(s=> s.id===storeId ? {...s, catalog} : s);
+function saveCatalog(storeId, catalog, catalogCategories) {
+  const stores = STATE.stores.map(s=> s.id===storeId
+    ? {...s, catalog, ...(catalogCategories ? {catalogCategories} : {})}
+    : s);
   storesRef.set(stores);
 }
 
@@ -975,13 +1025,8 @@ function renderStoreBody(store, items) {
       <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
         onclick="openManageCatalog('${sid}')">✏️ ערוך</button>
     </div>
-    <div class="catalog-chips">
-      ${chips.map(p=>`<button class="chip"
-        style="background:${lightBg};color:${c};border:1.5px solid ${lightBorder}"
-        onclick="addItemTo('${sid}','${escAttr(p)}')"
-        onmouseenter="this.style.background='${c}';this.style.color='#fff'"
-        onmouseleave="this.style.background='${lightBg}';this.style.color='${c}'">+ ${escHtml(p)}</button>`).join('')}
-      ${!chips.length?`<span style="color:#bbb;font-size:13px">${catQuery?'לא נמצא':'הכל ברשימה ✓'}</span>`:''}
+    <div class="catalog-chips" style="flex-direction:column;align-items:stretch">
+      ${renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store)}
     </div>
   </div>`;
 
@@ -1017,24 +1062,30 @@ function renderStoreBody(store, items) {
   if (!items.length) {
     h += `<div class="empty-state" style="padding:20px 0"><div class="emoji" style="font-size:32px">${store.emoji}</div><p>הרשימה ריקה</p></div>`;
   } else {
-    h += `<div class="item-list" id="item-list-${sid}">${pending.map(i=>renderItem(i,store)).join('')}</div>`;
+    h += renderGroupedItems(pending, store);
     if (done.length) {
       h += `<div class="done-header"><span class="done-label">✓ נרכש (${done.length})</span>
         <button class="clear-btn" onclick="clearDoneFor('${sid}')">נקה הכל</button></div>
-        <div class="item-list" style="opacity:.5">${done.map(i=>renderItem(i,store)).join('')}</div>`;
+        <div style="opacity:.5">${renderGroupedItems(done, store)}</div>`;
     }
   }
   return h;
 }
 
-function addItemTo(storeId, name) {
+function addItemTo(storeId, name, category) {
   if (!name?.trim()) return;
   const items = toArray((STATE.lists[storeId]||{}).items);
   if (items.find(i=>i.name===name.trim())) { toast('כבר ברשימה ✓'); return; }
-  const newItem = { id:'i'+Date.now(), name:name.trim(), done:false };
+  const cat = category || getCatalogCategory(storeId, name.trim()) || guessCategory(name.trim());
+  const newItem = { id:'i'+Date.now(), name:name.trim(), done:false, category:cat };
   if (MY_NAME) newItem.addedBy = MY_NAME;
   vibrate(20);
   listsRef.child(storeId).child('items').set([...items, newItem]);
+}
+
+function getCatalogCategory(storeId, name) {
+  const store = STATE.stores.find(s=>s.id===storeId);
+  return store?.catalogCategories?.[name] || null;
 }
 
 function clearDoneFor(storeId) {
@@ -1081,6 +1132,79 @@ function refreshBody(sid) {
   _applyCatalogState(sid);
 }
 
+
+function renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store) {
+  if (!chips.length) return `<span style="color:#bbb;font-size:13px">הכל ברשימה ✓</span>`;
+  // Group chips by their catalog category or guessed category
+  const groups = {};
+  const ORDER = Object.keys(CATEGORY_KEYWORDS);
+  for (const p of chips) {
+    const cat = getCatalogCategory(sid, p) || guessCategory(p);
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(p);
+  }
+  const sortedCats = Object.keys(groups).sort((a,b)=>{
+    const ai=ORDER.indexOf(a),bi=ORDER.indexOf(b);
+    if(ai===-1&&bi===-1)return a.localeCompare(b,'he');
+    if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi;
+  });
+  // If only one group, show flat
+  if (sortedCats.length <= 1) {
+    return chips.map(p=>`<button class="chip"
+      style="background:${lightBg};color:${c};border:1.5px solid ${lightBorder};margin:2px"
+      onclick="addItemTo('${sid}','${escAttr(p)}')"
+      onmouseenter="this.style.background='${c}';this.style.color='#fff'"
+      onmouseleave="this.style.background='${lightBg}';this.style.color='${c}'">+ ${escHtml(p)}</button>`).join('');
+  }
+  let h = '';
+  for (const cat of sortedCats) {
+    const emoji = cat.split(' ')[0];
+    const label = cat.substring(emoji.length).trim();
+    h += `<div class="cat-chips-group">
+      <div class="cat-chips-group-title">${emoji} ${escHtml(label)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${groups[cat].map(p=>`<button class="chip"
+          style="background:${lightBg};color:${c};border:1.5px solid ${lightBorder}"
+          onclick="addItemTo('${sid}','${escAttr(p)}')"
+          onmouseenter="this.style.background='${c}';this.style.color='#fff'"
+          onmouseleave="this.style.background='${lightBg}';this.style.color='${c}'">+ ${escHtml(p)}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+  return h;
+}
+
+function renderGroupedItems(items, store) {
+  // Group by category
+  const groups = {};
+  const ORDER = Object.keys(CATEGORY_KEYWORDS);
+  for (const item of items) {
+    const cat = item.category || guessCategory(item.name);
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  }
+  // Sort groups by ORDER
+  const sortedCats = Object.keys(groups).sort((a,b) => {
+    const ai = ORDER.indexOf(a), bi = ORDER.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b,'he');
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+  // If only one category (or all uncategorized), no headers
+  if (sortedCats.length <= 1) {
+    return `<div class="item-list" id="item-list-${store.id}">${items.map(i=>renderItem(i,store)).join('')}</div>`;
+  }
+  let h = `<div id="item-list-${store.id}">`;
+  for (const cat of sortedCats) {
+    const emoji = cat.split(' ')[0];
+    const label = cat.substring(emoji.length).trim();
+    h += `<div class="cat-group-header"><span>${emoji}</span> ${escHtml(label)}</div>`;
+    h += `<div class="item-list" style="margin-bottom:4px">${groups[cat].map(i=>renderItem(i,store)).join('')}</div>`;
+  }
+  h += '</div>';
+  return h;
+}
 
 function renderItem(item, store) {
   const c = store.color;
@@ -1413,42 +1537,125 @@ function openManageCatalog(storeId) {
   const store = STATE.stores.find(s=>s.id===storeId);
   if (!store) return;
   let catalog = [...(store.catalog||[])];
+  let catCategories = Object.assign({}, store.catalogCategories||{});
   let catInput = '';
 
+  const ORDER = Object.keys(CATEGORY_KEYWORDS);
+
+  const renderCatalogItems = () => {
+    if (!catalog.length) return `<div style="color:#bbb;font-size:13px;padding:8px 0">המאגר ריק</div>`;
+    // Group by category
+    const groups = {};
+    for (const item of catalog) {
+      const cat = catCategories[item] || guessCategory(item);
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    }
+    const sortedCats = Object.keys(groups).sort((a,b)=>{
+      const ai=ORDER.indexOf(a),bi=ORDER.indexOf(b);
+      if(ai===-1&&bi===-1)return 0; if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi;
+    });
+    return sortedCats.map(cat => {
+      const emoji = cat.split(' ')[0];
+      const label = cat.substring(emoji.length).trim();
+      return `<div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px;letter-spacing:.4px">${emoji} ${escHtml(label)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${groups[cat].map(item=>`
+            <div style="display:flex;align-items:center;gap:3px;background:${store.color}15;border:1.5px solid ${store.color}2a;border-radius:18px;padding:3px 6px 3px 9px;cursor:pointer"
+              onclick="catEditItem('${escAttr(item)}')" title="לחץ לשינוי קטגוריה">
+              <span style="font-size:12px;font-weight:700;color:${store.color}">${escHtml(item)}</span>
+              <button onclick="event.stopPropagation();catRemove('${escAttr(item)}')" style="background:none;border:none;cursor:pointer;color:${store.color}77;font-size:13px;padding:0 0 0 2px;line-height:1">×</button>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  };
+
   const render = () => {
+    const catOptions = ORDER.map(cat =>
+      `<option value="${escAttr(cat)}">${cat}</option>`
+    ).join('');
+
     openModal(`
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <input type="text" id="cat-input" value="${escHtml(catInput)}"
         placeholder="הוסף מוצר למאגר..."
-        style="flex:1;border:1.5px solid #e0d9ce;border-radius:10px;padding:8px 11px;font-size:14px;outline:none;direction:rtl;color:#1a1209"
+        style="flex:1;border:1.5px solid var(--border);border-radius:10px;padding:8px 11px;font-size:14px;outline:none;direction:rtl;color:var(--text);background:var(--bg);font-family:inherit"
         oninput="catInput=this.value"
         onkeydown="if(event.key==='Enter'){catAdd()}">
       <button class="btn-primary" style="background:${store.color}" onclick="catAdd()">הוסף</button>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:300px;overflow-y:auto;margin-bottom:14px">
-      ${catalog.map(item=>`
-        <div style="display:flex;align-items:center;gap:4px;background:${store.color}15;border:1.5px solid ${store.color}2a;border-radius:18px;padding:4px 8px 4px 10px">
-          <span style="font-size:13px;font-weight:600;color:${store.color}">${escHtml(item)}</span>
-          <button onclick="catRemove('${escAttr(item)}')" style="background:none;border:none;cursor:pointer;color:${store.color}77;font-size:14px;padding:0;line-height:1">×</button>
-        </div>`).join('')}
-      ${catalog.length===0?`<span style="color:#bbb;font-size:13px">המאגר ריק</span>`:''}
+    <div style="max-height:320px;overflow-y:auto;margin-bottom:14px">
+      ${renderCatalogItems()}
+    </div>
+    <div id="cat-edit-panel" style="display:none;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:8px">שנה קטגוריה ל: <strong id="cat-edit-name"></strong></div>
+      <select id="cat-edit-select" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px;font-size:14px;font-family:inherit;direction:rtl;background:var(--white)">
+        ${catOptions}
+      </select>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-primary" style="background:${store.color}" onclick="catSaveCat()">✓ שמור</button>
+        <button class="btn-secondary" onclick="document.getElementById('cat-edit-panel').style.display='none'">ביטול</button>
+      </div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn-primary btn-full" style="background:${store.color}" onclick="catSave()">✓ שמור</button>
-      <button class="btn-secondary" onclick="closeModal()">ביטול</button>
+      <button class="btn-primary btn-full" style="background:${store.color}" onclick="catSave()">✓ שמור מאגר</button>
+      <button class="btn-secondary" onclick="closeModal()">סגור</button>
     </div>`, `${store.emoji} מאגר — ${escHtml(store.name)}`);
     const ci = document.getElementById('cat-input');
     if (ci) ci.focus();
   };
 
   window.catInput = '';
+  window._catEditItem = null;
+
   window.catAdd = () => {
     const t = (document.getElementById('cat-input')?.value||'').trim();
     if (!t||catalog.includes(t)) return;
-    catalog.push(t); window.catInput=''; render();
+    catalog.push(t);
+    // Auto-assign category
+    catCategories[t] = guessCategory(t);
+    window.catInput='';
+    render();
   };
-  window.catRemove = (item) => { catalog=catalog.filter(i=>i!==item); render(); };
-  window.catSave   = () => { saveCatalog(storeId, catalog); closeModal(); toast('המאגר עודכן ✓'); };
+
+  window.catEditItem = (item) => {
+    window._catEditItem = item;
+    const panel = document.getElementById('cat-edit-panel');
+    const nameEl = document.getElementById('cat-edit-name');
+    const sel = document.getElementById('cat-edit-select');
+    if (!panel) return;
+    panel.style.display = 'block';
+    if (nameEl) nameEl.textContent = item;
+    const currentCat = catCategories[item] || guessCategory(item);
+    if (sel) sel.value = currentCat;
+  };
+
+  window.catSaveCat = () => {
+    const item = window._catEditItem;
+    const sel = document.getElementById('cat-edit-select');
+    if (!item || !sel) return;
+    catCategories[item] = sel.value;
+    document.getElementById('cat-edit-panel').style.display = 'none';
+    render();
+  };
+
+  window.catRemove = (item) => {
+    catalog = catalog.filter(i=>i!==item);
+    delete catCategories[item];
+    render();
+  };
+
+  window.catSave = () => {
+    const store = STATE.stores.find(s=>s.id===storeId);
+    const stores = STATE.stores.map(s => s.id===storeId
+      ? {...s, catalog, catalogCategories: catCategories}
+      : s);
+    storesRef.set(stores);
+    closeModal();
+    toast('המאגר עודכן ✓');
+  };
 
   render();
 }
