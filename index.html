@@ -577,6 +577,42 @@
     transition: border-color .15s; margin-bottom: 12px;
   }
   .username-input:focus { border-color: var(--border2); }
+
+  /* ── PIN Screen ── */
+  #pin-screen {
+    position: fixed; inset: 0; z-index: 99999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0; padding: 32px 24px;
+    font-family: 'Nunito', sans-serif;
+  }
+  .pin-logo { font-size: 52px; margin-bottom: 12px; }
+  .pin-title { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+  .pin-subtitle { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 28px; }
+  .pin-dots { display: flex; gap: 12px; margin-bottom: 28px; }
+  .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--border); transition: background .15s;
+  }
+  .pin-dot.filled { background: #1B4F8A; }
+  .pin-pad {
+    display: grid; grid-template-columns: repeat(3, 72px);
+    gap: 10px;
+  }
+  .pin-btn {
+    height: 72px; border-radius: 18px;
+    background: var(--white); border: 1.5px solid var(--border);
+    font-size: 24px; font-weight: 800; color: var(--text);
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 2px 8px rgba(60,70,120,.07);
+    transition: background .12s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pin-btn:active { background: #1B4F8A; color: #fff; transform: scale(.94); }
+  .pin-btn.del { font-size: 20px; }
+  .pin-error { color: #e53e3e; font-size: 13px; font-weight: 700; min-height: 20px; margin-top: 8px; }
+  .pin-set-link { margin-top: 20px; font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -616,6 +652,35 @@
   </div>
 
   <div id="footer">🟡 מסתנכרן בזמן אמת עם כל בני המשפחה</div>
+</div>
+
+<!-- PIN Screen -->
+<div id="pin-screen" style="display:none">
+  <div class="pin-logo">🛍️</div>
+  <div class="pin-title">רשימת קניות משפחתית</div>
+  <div class="pin-subtitle">הזן קוד כניסה</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn" onclick="pinPress('')" style="background:none;border-color:transparent;box-shadow:none"></button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-set-link" id="pin-admin-link" style="display:none" onclick="pinAdmin()">שנה קוד PIN</div>
 </div>
 
 <!-- Toast -->
@@ -1022,7 +1087,7 @@ function renderStoreBody(store, items) {
       onclick="openManageCatalog('${sid}')">✏️</button>
   </div>
   <div class="catalog-panel" id="cat-panel-${sid}">
-    <div class="catalog-chips" style="flex-direction:column;align-items:stretch;max-height:220px;overflow-y:auto;overflow-x:hidden">
+    <div class="catalog-chips" style="flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:4px">
       ${renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store)}
     </div>
   </div>`;
@@ -2035,6 +2100,85 @@ function escAttr(s) {
   if (!s) return '';
   return String(s).replace(/'/g,'\\x27').replace(/"/g,'\\x22');
 }
+
+// ══════════════════════════════════════════════════════════════
+//  PIN PROTECTION
+// ══════════════════════════════════════════════════════════════
+const PIN_KEY      = 'mkt-pin-v1';
+const PIN_UNLOCKED = 'mkt-unlocked-v1';
+const DEFAULT_PIN  = '1234';
+
+let _pinBuffer = '';
+
+function pinGetCode()    { return localStorage.getItem(PIN_KEY) || DEFAULT_PIN; }
+function pinIsUnlocked() {
+  // Session unlock stored in sessionStorage (clears when browser/tab closed)
+  return sessionStorage.getItem(PIN_UNLOCKED) === '1';
+}
+
+function pinInit() {
+  if (pinIsUnlocked()) return; // already unlocked this session
+  const screen = document.getElementById('pin-screen');
+  if (screen) screen.style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function pinPress(digit) {
+  if (!digit) return;
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += digit;
+  pinUpdateDots();
+  if (_pinBuffer.length === 4) {
+    setTimeout(pinCheck, 120);
+  }
+}
+
+function pinDel() {
+  _pinBuffer = _pinBuffer.slice(0, -1);
+  pinUpdateDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinUpdateDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd'+i);
+    if (dot) dot.classList.toggle('filled', i < _pinBuffer.length);
+  }
+}
+
+function pinCheck() {
+  if (_pinBuffer === pinGetCode()) {
+    sessionStorage.setItem(PIN_UNLOCKED, '1');
+    document.getElementById('pin-screen').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    // Show "change PIN" link to admin (who knows the PIN)
+    document.getElementById('pin-admin-link').style.display = 'block';
+  } else {
+    document.getElementById('pin-error').textContent = 'קוד שגוי, נסה שוב';
+    _pinBuffer = '';
+    pinUpdateDots();
+    // Shake dots
+    const dotsEl = document.getElementById('pin-dots');
+    dotsEl.style.animation = 'none';
+    dotsEl.style.transform = 'translateX(8px)';
+    setTimeout(() => {
+      dotsEl.style.transition = 'transform .4s ease';
+      dotsEl.style.transform = 'translateX(0)';
+    }, 50);
+  }
+}
+
+function pinAdmin() {
+  const current = prompt('קוד נוכחי (לאימות):');
+  if (current !== pinGetCode()) { alert('קוד שגוי'); return; }
+  const newPin = prompt('קוד חדש (4 ספרות):');
+  if (!newPin || !/^\d{4}$/.test(newPin)) { alert('קוד חייב להיות 4 ספרות'); return; }
+  localStorage.setItem(PIN_KEY, newPin);
+  toast('קוד PIN עודכן ✓');
+}
+
+// Run PIN check on load
+window.addEventListener('DOMContentLoaded', pinInit);
 
 let toastTimer;
 function toast(msg) {
