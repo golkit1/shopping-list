@@ -247,7 +247,7 @@
     font-family: 'Nunito', sans-serif; transition: border-color .15s;
   }
   .catalog-search-row input:focus { border-color: var(--text2); }
-  .catalog-chips { display: flex; flex-wrap: wrap; gap: 7px; max-height: 150px; overflow-y: auto; }
+  .catalog-chips { max-height: 200px; overflow-y: auto; overflow-x: hidden; }
   .chip {
     border-radius: 20px; padding: 6px 13px;
     font-size: 13px; font-weight: 700;
@@ -2169,11 +2169,38 @@ function pinCheck() {
 }
 
 function pinAdmin() {
-  const current = prompt('קוד נוכחי (לאימות):');
-  if (current !== pinGetCode()) { alert('קוד שגוי'); return; }
-  const newPin = prompt('קוד חדש (4 ספרות):');
-  if (!newPin || !/^\d{4}$/.test(newPin)) { alert('קוד חייב להיות 4 ספרות'); return; }
-  localStorage.setItem(PIN_KEY, newPin);
+  openModal(`
+    <div style="text-align:center;direction:rtl">
+      <div style="font-size:32px;margin-bottom:8px">🔒</div>
+      <div style="font-weight:800;font-size:16px;margin-bottom:16px;color:var(--text)">שינוי קוד PIN</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input id="pin-cur" type="number" placeholder="קוד נוכחי" maxlength="4"
+          style="border:1.5px solid var(--border);border-radius:12px;padding:11px;font-size:18px;
+                 text-align:center;font-family:inherit;outline:none;letter-spacing:8px;direction:ltr">
+        <input id="pin-new" type="number" placeholder="קוד חדש" maxlength="4"
+          style="border:1.5px solid var(--border);border-radius:12px;padding:11px;font-size:18px;
+                 text-align:center;font-family:inherit;outline:none;letter-spacing:8px;direction:ltr">
+        <input id="pin-new2" type="number" placeholder="אמת קוד חדש" maxlength="4"
+          style="border:1.5px solid var(--border);border-radius:12px;padding:11px;font-size:18px;
+                 text-align:center;font-family:inherit;outline:none;letter-spacing:8px;direction:ltr">
+        <div id="pin-change-err" style="color:#e53e3e;font-size:13px;font-weight:700;min-height:18px"></div>
+        <button onclick="pinAdminSave()" class="btn-primary" style="padding:13px;font-size:15px">✓ שמור קוד חדש</button>
+        <button onclick="closeModal()" class="btn-secondary">ביטול</button>
+      </div>
+    </div>
+  `, '🔒 שינוי קוד PIN');
+}
+
+function pinAdminSave() {
+  const cur  = document.getElementById('pin-cur')?.value?.trim();
+  const nw   = document.getElementById('pin-new')?.value?.trim();
+  const nw2  = document.getElementById('pin-new2')?.value?.trim();
+  const err  = document.getElementById('pin-change-err');
+  if (cur !== pinGetCode())        { err.textContent = 'הקוד הנוכחי שגוי'; return; }
+  if (!/^\d{4}$/.test(nw))        { err.textContent = 'קוד חייב להיות 4 ספרות'; return; }
+  if (nw !== nw2)                  { err.textContent = 'הקודים החדשים לא תואמים'; return; }
+  localStorage.setItem(PIN_KEY, nw);
+  closeModal();
   toast('קוד PIN עודכן ✓');
 }
 
