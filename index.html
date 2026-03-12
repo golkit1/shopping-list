@@ -880,6 +880,9 @@ function renderAccordion() {
       </div>
     </div>`;
   }).join('');
+
+  // Restore catalog open states after full re-render
+  openCatalogs.forEach(sid => _applyCatalogState(sid));
 }
 
 function toggleSection(storeId) {
@@ -1208,6 +1211,15 @@ function openHistory() {
       const d = new Date(h.at);
       const dateStr = d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'2-digit'})
                     + ' ' + d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+      const alreadyInList = toArray((STATE.lists[h.storeId]||{}).items)
+        .some(i => i.name === h.name && !i.done);
+      const addBtn = alreadyInList
+        ? `<span style="font-size:11px;color:var(--muted);font-weight:700;padding:4px 8px">✓ ברשימה</span>`
+        : `<button onclick="histReAdd('${escAttr(h.name)}','${h.storeId}')"
+             style="border:1.5px solid ${store?.color||'#888'};color:${store?.color||'#888'};
+                    background:${store?.color||'#888'}10;border-radius:10px;
+                    padding:5px 10px;font-size:12px;font-weight:800;white-space:nowrap;
+                    font-family:inherit;cursor:pointer">+ הוסף</button>`;
       return `<div class="history-item">
         <span>${store?.emoji||'🛍️'}</span>
         <div style="flex:1;min-width:0">
@@ -1215,7 +1227,7 @@ function openHistory() {
           ${h.by?`<div style="font-size:10px;color:var(--muted);font-weight:700;margin-top:1px">✓ ${escHtml(h.by)}</div>`:''}
         </div>
         ${h.qty?`<span class="history-qty" style="background:${store?.color||'#888'}18;color:${store?.color||'#888'}">${h.qty} ${h.unit||''}</span>`:''}
-        <span class="history-date">${dateStr}</span>
+        ${addBtn}
       </div>`;
     }).join('');
 
@@ -1228,6 +1240,13 @@ function openHistory() {
     filterStore = id;
     const body = document.querySelector('.modal-body');
     if (body) body.innerHTML = renderHistoryBody();
+  };
+  window.histReAdd = (name, storeId) => {
+    addItemTo(storeId, name);
+    toast('נוסף לרשימה ✓');
+    // Re-render history modal to update button state
+    const body = document.querySelector('.modal-body');
+    if (body) setTimeout(() => { body.innerHTML = renderHistoryBody(); }, 350);
   };
 
   openModal(renderHistoryBody(), '📋 היסטוריית קניות');
