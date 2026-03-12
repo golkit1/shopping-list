@@ -153,19 +153,18 @@
 
   /* ── Accordion body with smooth height animation ── */
   .store-body {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows .38s cubic-bezier(.4,0,.2,1);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .38s cubic-bezier(.4,0,.2,1);
   }
-  .store-section.open .store-body { grid-template-rows: 1fr; }
-  .store-body-overflow { overflow: hidden; }
+  .store-section.open .store-body { max-height: 2400px; }
 
   .store-body-inner {
     padding: 13px 13px 15px;
     border-top: 1.5px solid var(--border);
     opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity .3s ease .05s, transform .3s ease .05s;
+    transform: translateY(-5px);
+    transition: opacity .28s ease .06s, transform .28s ease .06s;
   }
   .store-section.open .store-body-inner {
     opacity: 1; transform: translateY(0);
