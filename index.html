@@ -1084,6 +1084,8 @@ function renderStoreBody(store, items) {
       autocomplete="off" value="${escHtml(catQuery)}">
     <button class="btn-primary" style="background:${c}"
       onclick="unifiedAdd('${sid}')">+ הוסף</button>
+    <button id="cat-tog-${sid}" class="btn-ghost" style="border-color:${c};color:${c}"
+      onclick="toggleCatalogFor('${sid}')">מאגר ▼</button>
     <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
       onclick="openManageCatalog('${sid}')">✏️</button>
   </div>
