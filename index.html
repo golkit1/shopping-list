@@ -1767,63 +1767,11 @@ function toast(msg) {
   toastTimer = setTimeout(()=>el.classList.remove('show'), 2000);
 }
 
-// ── PWA Install prompt (Android) ──
-let _installPrompt = null;
+// ── PWA Install prompt (Android) — let browser handle natively ──
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _installPrompt = e;
-  // Show install banner after 3 seconds if not already installed
-  setTimeout(showInstallBanner, 3000);
+  // Do NOT call e.preventDefault() — let browser show its own prompt immediately
+  console.log('PWA installable');
 });
-
-function showInstallBanner() {
-  if (!_installPrompt) return;
-  if (window.matchMedia('(display-mode: standalone)').matches) return;
-  if (localStorage.getItem('pwa-dismissed')) return;
-
-  const banner = document.createElement('div');
-  banner.id = 'install-banner';
-  banner.innerHTML = `
-    <div style="
-      position:fixed;bottom:0;left:0;right:0;z-index:9999;
-      background:#fff;border-top:2px solid #E8EAF0;
-      padding:14px 16px 24px;
-      display:flex;align-items:center;gap:12px;
-      box-shadow:0 -4px 20px rgba(60,70,120,.12);
-      max-width:520px;margin:0 auto;
-      font-family:'Nunito',sans-serif;direction:rtl;
-    ">
-      <span style="font-size:36px">🛍️</span>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:800;color:#1A1D2E">הוסף לדף הבית</div>
-        <div style="font-size:12px;color:#9298B0;font-weight:600">גישה מהירה כמו אפליקציה אמיתית</div>
-      </div>
-      <button onclick="doInstall()" style="
-        background:#1B4F8A;color:#fff;border:none;border-radius:12px;
-        padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;
-        font-family:'Nunito',sans-serif;white-space:nowrap
-      ">התקן</button>
-      <button onclick="dismissInstall()" style="
-        background:none;border:none;color:#9298B0;font-size:22px;cursor:pointer;
-        padding:0;line-height:1
-      ">✕</button>
-    </div>`;
-  document.body.appendChild(banner);
-}
-
-window.doInstall = async () => {
-  if (!_installPrompt) return;
-  _installPrompt.prompt();
-  const { outcome } = await _installPrompt.userChoice;
-  if (outcome === 'accepted') toast('האפליקציה הותקנה! 🎉');
-  _installPrompt = null;
-  document.getElementById('install-banner')?.remove();
-};
-
-window.dismissInstall = () => {
-  localStorage.setItem('pwa-dismissed', '1');
-  document.getElementById('install-banner')?.remove();
-};
 
 // iOS install hint (shows once)
 window.addEventListener('load', () => {
