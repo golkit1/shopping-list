@@ -1005,7 +1005,7 @@ function toggleSection(storeId) {
     sec.classList.remove('open');
   } else {
     openStores.add(storeId);
-    openCatalogs.add(storeId);  // auto-open catalog panel with store
+    // catalog stays closed by default
     sec.classList.add('open');
     activeStoreId = storeId;
     // Lazy-render body content
@@ -1057,7 +1057,7 @@ function renderStoreBody(store, items) {
     <input type="text" placeholder="חיפוש / הוספת מוצר..." id="qi-${sid}"
       oninput="filterCatalogChips('${sid}',this.value)"
       onkeydown="if(event.key==='Enter'){unifiedAdd('${sid}');}"
-      onfocus="openCatalogs.add('${sid}');_applyCatalogState('${sid}')"
+      
       autocomplete="off" value="${escHtml(catQuery)}">
     <button class="btn-primary" style="background:${c}"
       onclick="unifiedAdd('${sid}')">+ הוסף</button>
@@ -2102,9 +2102,9 @@ function savedRoomsGet() {
 function savedRoomsSave(rooms) {
   localStorage.setItem(SAVED_ROOMS_KEY, JSON.stringify(rooms));
 }
-function savedRoomsAdd(code, nickname) {
+function savedRoomsAdd(code, nickname, desc) {
   const rooms = savedRoomsGet().filter(r => r.code !== code);
-  rooms.unshift({ code, nickname: nickname || code });
+  rooms.unshift({ code, nickname: nickname || code, desc: desc || '' });
   savedRoomsSave(rooms.slice(0, 10));
 }
 function savedRoomsRemove(code) {
@@ -2156,9 +2156,10 @@ function openRoomSwitcher() {
     <div class="room-list-item${r.code===current?' active':''}" onclick="roomQuickSwitch('${r.code}')">
       <span class="room-list-emoji">${r.code===current?'✅':'🏠'}</span>
       <div class="room-list-info">
-        <div class="room-list-code">${r.code}</div>
-        <div class="room-list-name">${r.code===current?'פעיל כעת':escHtml(r.nickname||r.code)}</div>
+        <div class="room-list-code">${escHtml(r.nickname||r.code)} <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px">${r.code}</span></div>
+        ${r.desc ? `<div class="room-list-name">${escHtml(r.desc)}</div>` : (r.code===current ? '<div class="room-list-name">פעיל כעת</div>' : '')}
       </div>
+      <button class="room-list-del" onclick="event.stopPropagation();roomEditSaved('${r.code}')" title="ערוך">✏️</button>
       <button class="room-list-del" onclick="event.stopPropagation();roomRemoveSaved('${r.code}')" title="הסר">✕</button>
     </div>`).join('');
 
@@ -2208,7 +2209,41 @@ window.roomQuickSwitch = (code) => {
 window.roomRemoveSaved = (code) => {
   savedRoomsRemove(code);
   if (code === roomGet()) { roomSet(''); location.reload(); return; }
-  openRoomSwitcher(); // re-render modal
+  openRoomSwitcher();
+};
+
+window.roomEditSaved = (code) => {
+  const rooms = savedRoomsGet();
+  const r = rooms.find(x => x.code === code);
+  if (!r) return;
+  openModal(`
+    <div style="direction:rtl;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:13px;font-weight:800;color:var(--muted);letter-spacing:1px;text-align:center">${code}</div>
+      <input id="re-name" type="text" maxlength="20" placeholder="שם לזיהוי..."
+        value="${escHtml(r.nickname||r.code)}"
+        style="border:2px solid var(--border);border-radius:12px;padding:11px;font-size:15px;
+               font-family:inherit;outline:none;direction:rtl;background:var(--bg);color:var(--text)">
+      <input id="re-desc" type="text" maxlength="40" placeholder="תיאור (אופציונלי)..."
+        value="${escHtml(r.desc||'')}"
+        style="border:2px solid var(--border);border-radius:12px;padding:11px;font-size:14px;
+               font-family:inherit;outline:none;direction:rtl;background:var(--bg);color:var(--text)">
+      <button onclick="roomSaveEdit('${code}')"
+        style="background:#1B4F8A;color:#fff;border:none;border-radius:12px;padding:13px;
+               font-size:15px;font-weight:800;font-family:inherit;cursor:pointer">✓ שמור</button>
+      <button onclick="openRoomSwitcher()" class="btn-secondary">ביטול</button>
+    </div>
+  `, '✏️ עריכת חדר');
+};
+
+window.roomSaveEdit = (code) => {
+  const name = (document.getElementById('re-name')?.value||'').trim();
+  const desc = (document.getElementById('re-desc')?.value||'').trim();
+  const rooms = savedRoomsGet().map(r =>
+    r.code === code ? {...r, nickname: name||code, desc} : r
+  );
+  savedRoomsSave(rooms);
+  closeModal();
+  toast('עודכן ✓');
 };
 
 window.roomSwitchNew = () => {
@@ -2217,7 +2252,7 @@ window.roomSwitchNew = () => {
   const err  = document.getElementById('rs-err');
   if (!code || code.length < 3) { err.textContent = 'קוד חייב להיות לפחות 3 תווים'; return; }
   closeModal();
-  switchToRoom(code, name || code);
+  switchToRoom(code, name || code, '');
   toast('עברת לחדר ' + code + ' ✓');
 };
 
