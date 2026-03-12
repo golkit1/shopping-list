@@ -3,9 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#1B4F8A">
+<meta name="description" content="רשימת קניות משפחתית משותפת בזמן אמת">
+
+<!-- PWA: iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="קניות">
+
+<!-- PWA: iOS icons (inline SVG → data URI) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231B4F8A'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle'%3E%F0%9F%9B%8D%3C/text%3E%3C/svg%3E">
+
+<!-- PWA: Splash screens iOS -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- PWA: Manifest (inline via data URI) -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D7%A8%D7%A9%D7%99%D7%9E%D7%AA%20%D7%A7%D7%A0%D7%99%D7%95%D7%AA%20%D7%9E%D7%A9%D7%A4%D7%97%D7%AA%D7%99%D7%AA%22%2C%22short_name%22%3A%22%D7%A7%D7%A0%D7%99%D7%95%D7%AA%22%2C%22description%22%3A%22%D7%A8%D7%A9%D7%99%D7%9E%D7%AA%20%D7%A7%D7%A0%D7%99%D7%95%D7%AA%20%D7%9Eשותפת%20%D7%91%D7%96%D7%9E%D7%9F%20%D7%90%D7%9E%D7%AA%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F8F9FC%22%2C%22theme_color%22%3A%22%231B4F8A%22%2C%22orientation%22%3A%22portrait%22%2C%22lang%22%3A%22he%22%2C%22dir%22%3A%22rtl%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520192%2520192'%253E%253Crect%2520width%3D'192'%2520height%3D'192'%2520rx%3D'40'%2520fill%3D'%25231B4F8A'%2F%253E%253Ctext%2520x%3D'96'%2520y%3D'138'%2520font-size%3D'120'%2520text-anchor%3D'middle'%253E%25F0%259F%259B%258D%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+
 <title>🛍️ רשימת קניות משפחתית</title>
 
 <!-- Firebase SDK -->
@@ -1752,6 +1766,98 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>el.classList.remove('show'), 2000);
 }
+
+// ── PWA Install prompt (Android) ──
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  // Show install banner after 3 seconds if not already installed
+  setTimeout(showInstallBanner, 3000);
+});
+
+function showInstallBanner() {
+  if (!_installPrompt) return;
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (localStorage.getItem('pwa-dismissed')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.innerHTML = `
+    <div style="
+      position:fixed;bottom:0;left:0;right:0;z-index:9999;
+      background:#fff;border-top:2px solid #E8EAF0;
+      padding:14px 16px 24px;
+      display:flex;align-items:center;gap:12px;
+      box-shadow:0 -4px 20px rgba(60,70,120,.12);
+      max-width:520px;margin:0 auto;
+      font-family:'Nunito',sans-serif;direction:rtl;
+    ">
+      <span style="font-size:36px">🛍️</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:800;color:#1A1D2E">הוסף לדף הבית</div>
+        <div style="font-size:12px;color:#9298B0;font-weight:600">גישה מהירה כמו אפליקציה אמיתית</div>
+      </div>
+      <button onclick="doInstall()" style="
+        background:#1B4F8A;color:#fff;border:none;border-radius:12px;
+        padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;
+        font-family:'Nunito',sans-serif;white-space:nowrap
+      ">התקן</button>
+      <button onclick="dismissInstall()" style="
+        background:none;border:none;color:#9298B0;font-size:22px;cursor:pointer;
+        padding:0;line-height:1
+      ">✕</button>
+    </div>`;
+  document.body.appendChild(banner);
+}
+
+window.doInstall = async () => {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  const { outcome } = await _installPrompt.userChoice;
+  if (outcome === 'accepted') toast('האפליקציה הותקנה! 🎉');
+  _installPrompt = null;
+  document.getElementById('install-banner')?.remove();
+};
+
+window.dismissInstall = () => {
+  localStorage.setItem('pwa-dismissed', '1');
+  document.getElementById('install-banner')?.remove();
+};
+
+// iOS install hint (shows once)
+window.addEventListener('load', () => {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone;
+  const dismissed = localStorage.getItem('ios-hint-dismissed');
+
+  if (isIOS && !isStandalone && !dismissed) {
+    setTimeout(() => {
+      const hint = document.createElement('div');
+      hint.innerHTML = `
+        <div style="
+          position:fixed;bottom:0;left:0;right:0;z-index:9999;
+          background:#fff;border-top:2px solid #E8EAF0;
+          padding:14px 16px 32px;
+          box-shadow:0 -4px 20px rgba(60,70,120,.12);
+          font-family:'Nunito',sans-serif;direction:rtl;
+          text-align:center;
+        ">
+          <button onclick="this.closest('div').parentElement.remove();localStorage.setItem('ios-hint-dismissed','1')"
+            style="position:absolute;top:10px;left:14px;background:none;border:none;color:#9298B0;font-size:22px;cursor:pointer">✕</button>
+          <div style="font-size:28px;margin-bottom:6px">📲</div>
+          <div style="font-size:14px;font-weight:800;color:#1A1D2E;margin-bottom:4px">הוסף לדף הבית</div>
+          <div style="font-size:13px;color:#4A4F6A;font-weight:600;line-height:1.6">
+            לחץ על <strong>⎋</strong> שיתוף<br>
+            ואז <strong>"הוסף למסך הבית"</strong>
+          </div>
+        </div>`;
+      document.body.appendChild(hint);
+      setTimeout(() => hint.remove(), 8000);
+    }, 2500);
+  }
+});
 </script>
 </body>
 </html>
