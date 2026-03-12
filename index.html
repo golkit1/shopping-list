@@ -578,6 +578,41 @@
   }
   .username-input:focus { border-color: var(--border2); }
 
+  /* ── Room Screen ── */
+  #room-screen {
+    position: fixed; inset: 0; z-index: 99998;
+    background: var(--bg);
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px; font-family: 'Nunito', sans-serif;
+  }
+  .room-logo { font-size: 56px; margin-bottom: 12px; }
+  .room-title { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 6px; text-align:center }
+  .room-sub { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 28px; text-align:center; line-height:1.6 }
+  .room-input-wrap { width:100%; max-width:300px; margin-bottom:14px }
+  .room-input {
+    width:100%; border:2px solid var(--border); border-radius:14px;
+    padding:14px 16px; font-size:18px; font-weight:800; text-align:center;
+    font-family:inherit; outline:none; background:var(--white); color:var(--text);
+    letter-spacing:3px; direction:ltr; box-sizing:border-box;
+    transition: border-color .2s;
+  }
+  .room-input:focus { border-color: #1B4F8A; }
+  .room-btn {
+    width:100%; max-width:300px; padding:14px;
+    background:#1B4F8A; color:#fff; border:none; border-radius:14px;
+    font-size:16px; font-weight:800; font-family:inherit; cursor:pointer;
+    margin-bottom:10px;
+  }
+  .room-or { color:var(--muted); font-size:12px; font-weight:700; margin:4px 0 10px; }
+  .room-new-btn {
+    width:100%; max-width:300px; padding:12px;
+    background:none; border:2px solid var(--border); border-radius:14px;
+    font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; color:var(--text2);
+  }
+  .room-err { color:#e53e3e; font-size:13px; font-weight:700; min-height:18px; margin-top:6px; }
+  .room-current { font-size:11px; color:var(--muted); font-weight:700; margin-top:20px; cursor:pointer; text-decoration:underline }
+
   /* ── PIN Screen ── */
   #pin-screen {
     position: fixed; inset: 0; z-index: 99999;
@@ -652,6 +687,24 @@
   </div>
 
   <div id="footer">🟡 מסתנכרן בזמן אמת עם כל בני המשפחה</div>
+</div>
+
+<!-- Room Screen -->
+<div id="room-screen">
+  <div class="room-logo">🏠</div>
+  <div class="room-title">רשימת קניות משפחתית</div>
+  <div class="room-sub">הזן קוד משפחה כדי לשתף רשימות<br>עם בני הבית שלך</div>
+  <div class="room-input-wrap">
+    <input class="room-input" id="room-input" type="text" maxlength="12"
+      placeholder="קוד משפחה..."
+      oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+      onkeydown="if(event.key==='Enter')roomJoin()">
+  </div>
+  <button class="room-btn" onclick="roomJoin()">כניסה / יצירה →</button>
+  <div class="room-or">— או —</div>
+  <button class="room-new-btn" onclick="roomGenerate()">✨ צור קוד אקראי בשבילי</button>
+  <div class="room-err" id="room-err"></div>
+  <div class="room-current" id="room-switch" style="display:none" onclick="roomForget()">החלף קוד משפחה</div>
 </div>
 
 <!-- PIN Screen -->
@@ -803,101 +856,8 @@ const FIREBASE_CONFIG = {
   appId: "1:467575634475:web:4a25e5f839bddd0322c86e"
 };
 
-window.addEventListener('DOMContentLoaded', () => {
-  initFirebase(FIREBASE_CONFIG);
-});
-
-async function initFirebase(cfg) {
-  if (!firebase.apps.length) {
-    firebase.initializeApp(cfg);
-  }
-  db = firebase.database();
-
-  storesRef    = db.ref('stores');
-  listsRef     = db.ref('lists');
-  historyRef   = db.ref('history');
-  recurringRef = db.ref('recurring');
-
-  // Ask for username if not set
-  setTimeout(ensureUsername, 800);
-
-  // Seed/update stores based on version
-  const STORES_VERSION = "v3-2026";
-  db.ref('storesVersion').once('value', snap => {
-    if (snap.val() !== STORES_VERSION) {
-      storesRef.set(DEFAULT_STORES);
-      db.ref('storesVersion').set(STORES_VERSION);
-    }
-  });
-
-  // Real-time listeners
-  storesRef.on('value', snap => {
-    const val = snap.val();
-    STATE.stores = val ? (Array.isArray(val) ? val : Object.values(val)) : DEFAULT_STORES;
-    if (!activeStoreId || !STATE.stores.find(s=>s.id===activeStoreId)) {
-      activeStoreId = STATE.stores[0]?.id;
-    }
-    renderHeader();
-    renderAccordion();
-  });
-  listsRef.on('value', snap => {
-    const newLists = snap.val() || {};
-    // Find which stores changed and refresh only those
-    const changedStores = new Set();
-    STATE.stores.forEach(s => {
-      if (JSON.stringify(newLists[s.id]) !== JSON.stringify(STATE.lists[s.id])) {
-        changedStores.add(s.id);
-      }
-    });
-    STATE.lists = newLists;
-    if (changedStores.size === 0) return;
-    // Refresh header count
-    renderHeader();
-    // Refresh open store bodies + their badges
-    changedStores.forEach(sid => {
-      const store = STATE.stores.find(s=>s.id===sid);
-      const items = toArray((STATE.lists[sid]||{}).items);
-      const pending = items.filter(i=>!i.done);
-      // Update badge in header button
-      const sec = document.getElementById('sec-'+sid);
-      if (sec) {
-        const badge = sec.querySelector('.store-header-badge');
-        if (pending.length > 0) {
-          if (badge) badge.textContent = pending.length;
-          else {
-            const arrow = sec.querySelector('.store-header-arrow');
-            if (arrow) {
-              const b = document.createElement('span');
-              b.className = 'store-header-badge';
-              b.textContent = pending.length;
-              sec.querySelector('.store-header').insertBefore(b, arrow);
-            }
-          }
-        } else if (badge) badge.remove();
-      }
-      // Refresh body if open - uses refreshBody to preserve catalog/open state
-      if (openStores.has(sid) && store) {
-        refreshBody(sid);
-      }
-    });
-  });
-  historyRef.on('value', snap => {
-    const val = snap.val();
-    STATE.history = val ? Object.values(val) : [];
-  });
-
-  recurringRef.on('value', snap => {
-    const val = snap.val();
-    STATE.recurring = val ? Object.values(val) : [];
-    checkRecurring();
-  });
-
-  // Connection indicator
-  db.ref('.info/connected').on('value', snap => {
-    const dot = document.getElementById('sync-dot');
-    if (dot) dot.classList.toggle('live', !!snap.val());
-  });
-}
+// DOMContentLoaded — room handles everything
+window.addEventListener('DOMContentLoaded', roomInit);
 
 // ══════════════════════════════════════════════════════════════
 //  DATA HELPERS
@@ -1087,6 +1047,14 @@ function renderStoreBody(store, items) {
       onclick="openManageCatalog('${sid}')">✏️</button>
   </div>
   <div class="catalog-panel" id="cat-panel-${sid}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.4px">מוצרי המאגר</span>
+      <button onclick="toggleCatalogFor('${sid}')"
+        style="background:none;border:none;font-size:12px;color:var(--muted);font-weight:700;
+               cursor:pointer;padding:2px 6px;font-family:inherit">
+        ▲ סגור
+      </button>
+    </div>
     <div class="catalog-chips">
       ${renderCatalogChipsGrouped(chips, sid, c, lightBg, lightBorder, store)}
     </div>
@@ -2102,6 +2070,142 @@ function escAttr(s) {
 }
 
 // ══════════════════════════════════════════════════════════════
+//  ROOM CODE — separate Firebase namespace per family
+// ══════════════════════════════════════════════════════════════
+const ROOM_KEY = 'mkt-room-v1';
+
+function roomGet()    { return localStorage.getItem(ROOM_KEY) || ''; }
+function roomSet(r)   { localStorage.setItem(ROOM_KEY, r); }
+function roomForget() { localStorage.removeItem(ROOM_KEY); location.reload(); }
+
+function roomGenerate() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('room-input').value = code;
+}
+
+function roomJoin() {
+  const code = (document.getElementById('room-input')?.value||'').trim().toUpperCase();
+  const err  = document.getElementById('room-err');
+  if (!code || code.length < 3) { err.textContent = 'קוד חייב להיות לפחות 3 תווים'; return; }
+  roomSet(code);
+  document.getElementById('room-screen').style.display = 'none';
+  // Re-init Firebase with the room prefix
+  initFirebaseWithRoom(code);
+  // Show app (PIN will handle further auth if needed)
+  document.getElementById('app').style.display = '';
+  showPinIfNeeded();
+}
+
+function roomInit() {
+  const code = roomGet();
+  if (code) {
+    // Already have a room
+    document.getElementById('app').style.display = '';
+    showPinIfNeeded();
+    initFirebaseWithRoom(code);
+    return;
+  }
+  // Show room screen
+  document.getElementById('room-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function initFirebaseWithRoom(roomCode) {
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  db = firebase.database();
+
+  const base = 'rooms/' + roomCode;
+  storesRef    = db.ref(base + '/stores');
+  listsRef     = db.ref(base + '/lists');
+  historyRef   = db.ref(base + '/history');
+  recurringRef = db.ref(base + '/recurring');
+
+  // Show room code subtly in footer
+  const footer = document.getElementById('footer');
+  if (footer) footer.innerHTML = `🏠 חדר: <strong>${roomCode}</strong> &nbsp;·&nbsp; 🟡 מסתנכרן בזמן אמת`;
+
+  // Show "switch room" link on room screen if ever needed
+  const sw = document.getElementById('room-switch');
+  if (sw) { sw.style.display = 'block'; sw.textContent = 'קוד נוכחי: ' + roomCode + ' (החלף)'; }
+
+  // Ask for username, seed stores, start listeners
+  setTimeout(ensureUsername, 800);
+
+  const STORES_VERSION = "v3-2026";
+  db.ref(base + '/storesVersion').once('value', snap => {
+    if (snap.val() !== STORES_VERSION) {
+      storesRef.set(DEFAULT_STORES);
+      db.ref(base + '/storesVersion').set(STORES_VERSION);
+    }
+  });
+
+  attachListeners();
+}
+
+function attachListeners() {
+  storesRef.on('value', snap => {
+    const val = snap.val();
+    STATE.stores = val ? (Array.isArray(val) ? val : Object.values(val)) : DEFAULT_STORES;
+    if (!activeStoreId || !STATE.stores.find(s=>s.id===activeStoreId)) {
+      activeStoreId = STATE.stores[0]?.id;
+    }
+    renderHeader();
+    renderAccordion();
+  });
+  listsRef.on('value', snap => {
+    const newLists = snap.val() || {};
+    const changedStores = new Set();
+    STATE.stores.forEach(s => {
+      if (JSON.stringify(newLists[s.id]) !== JSON.stringify(STATE.lists[s.id])) {
+        changedStores.add(s.id);
+      }
+    });
+    STATE.lists = newLists;
+    if (changedStores.size === 0) return;
+    renderHeader();
+    changedStores.forEach(sid => {
+      const store = STATE.stores.find(s=>s.id===sid);
+      const items = toArray((STATE.lists[sid]||{}).items);
+      const pending = items.filter(i=>!i.done);
+      const sec = document.getElementById('sec-'+sid);
+      if (sec) {
+        const badge = sec.querySelector('.store-header-badge');
+        if (pending.length > 0) {
+          if (badge) badge.textContent = pending.length;
+          else {
+            const arrow = sec.querySelector('.store-header-arrow');
+            if (arrow) {
+              const b = document.createElement('span');
+              b.className = 'store-header-badge';
+              b.textContent = pending.length;
+              sec.querySelector('.store-header').insertBefore(b, arrow);
+            }
+          }
+        } else if (badge) badge.remove();
+      }
+      if (openStores.has(sid) && store) refreshBody(sid);
+    });
+  });
+  historyRef.on('value', snap => {
+    const val = snap.val();
+    STATE.history = val ? Object.values(val) : [];
+  });
+  recurringRef.on('value', snap => {
+    const val = snap.val();
+    STATE.recurring = val ? Object.values(val) : [];
+    checkRecurring();
+  });
+  db.ref('.info/connected').on('value', snap => {
+    const dot = document.getElementById('sync-dot');
+    if (dot) dot.classList.toggle('live', !!snap.val());
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
 //  PIN PROTECTION
 // ══════════════════════════════════════════════════════════════
 const PIN_KEY      = 'mkt-pin-v1';
@@ -2121,6 +2225,11 @@ function pinInit() {
   const screen = document.getElementById('pin-screen');
   if (screen) screen.style.display = 'flex';
   document.getElementById('app').style.display = 'none';
+}
+
+// Called from roomInit after room is known
+function showPinIfNeeded() {
+  pinInit();
 }
 
 function pinPress(digit) {
@@ -2204,8 +2313,7 @@ function pinAdminSave() {
   toast('קוד PIN עודכן ✓');
 }
 
-// Run PIN check on load
-window.addEventListener('DOMContentLoaded', pinInit);
+// PIN init is called from roomInit flow
 
 let toastTimer;
 function toast(msg) {
