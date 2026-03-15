@@ -995,7 +995,11 @@ function renderAccordion() {
           <span></span><span></span><span></span>
         </div>
         <div style="flex:1;display:flex;align-items:center;gap:12px;min-width:0;cursor:pointer"
-          onclick="toggleSection('${store.id}')">
+          onclick="toggleSection('${store.id}')"
+          ontouchstart="storeHeaderLongPress(event,'${store.id}')"
+          ontouchend="storeHeaderLongCancel()"
+          ontouchmove="storeHeaderLongCancel()"
+          oncontextmenu="storeAskDelete('${store.id}');return false;">
         <span class="store-header-emoji">${store.emoji}</span>
         <div class="store-header-info">
           <div class="store-header-name" style="color:#fff">${escHtml(store.name)}</div>
@@ -1177,15 +1181,11 @@ function unifiedAdd(sid) {
   const store = STATE.stores.find(s=>s.id===sid);
   if (store && !(store.catalog||[]).includes(val)) {
     const updatedCatalog = [...(store.catalog||[]), val];
-    storesRef.once('value', snap => {
-      const all = snap.val();
-      const arr = all ? (Array.isArray(all) ? all : Object.values(all)) : [];
-      const idx = arr.findIndex(s=>s.id===sid);
-      if (idx >= 0) {
-        arr[idx].catalog = updatedCatalog;
-        storesRef.set(arr);
-      }
-    });
+    // Update local state immediately so chips show it
+    store.catalog = updatedCatalog;
+    // Persist to Firebase
+    const allStores = STATE.stores;
+    storesRef.set(allStores);
   }
 
   addItemTo(sid, val);
@@ -1195,14 +1195,18 @@ function unifiedAdd(sid) {
   inp.focus();
   window['catQ_'+sid] = '';
 
-  // Refresh chips
+  // Refresh chips — preserve scroll position
   if (!store) return;
   const items = toArray((STATE.lists[sid]||{}).items);
   const names = new Set(items.map(i=>i.name));
   const c = store.color;
   const chips = (store.catalog||[]).filter(p=>!names.has(p) && p !== val);
   const chipsContainer = document.querySelector(`#cat-panel-${sid} .catalog-chips`);
-  if (chipsContainer) chipsContainer.innerHTML = renderCatalogChipsGrouped(chips, sid, c, c+'14', c+'2a', store);
+  if (chipsContainer) {
+    const scrollTop = chipsContainer.scrollTop;
+    chipsContainer.innerHTML = renderCatalogChipsGrouped(chips, sid, c, c+'14', c+'2a', store);
+    chipsContainer.scrollTop = scrollTop;
+  }
 }
 
 function filterCatalogChips(sid, query) {
@@ -2089,6 +2093,47 @@ function storeDragEnd() {
   document.querySelectorAll('.store-section').forEach(s => s.classList.remove('store-dragging','store-drag-over'));
   _storeDragId = null;
 }
+
+// Long-press on store header → delete
+let _storeLongTimer = null;
+function storeHeaderLongPress(e, sid) {
+  _storeLongTimer = setTimeout(() => {
+    _storeLongTimer = null;
+    storeAskDelete(sid);
+  }, 600);
+}
+function storeHeaderLongCancel() {
+  if (_storeLongTimer) { clearTimeout(_storeLongTimer); _storeLongTimer = null; }
+}
+function storeAskDelete(sid) {
+  const store = STATE.stores.find(s=>s.id===sid);
+  if (!store) return;
+  const items = toArray((STATE.lists[sid]||{}).items);
+  openModal(`
+    <div style="text-align:center;direction:rtl">
+      <div style="font-size:44px;margin-bottom:12px">${store.emoji}</div>
+      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">מחק חנות "${escHtml(store.name)}"?</div>
+      ${items.length > 0 ? `<div style="font-size:13px;color:#e53e3e;font-weight:700;margin-bottom:16px">⚠️ יש ${items.length} פריטים ברשימה זו</div>` : '<div style="margin-bottom:16px"></div>'}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button onclick="storeConfirmDelete('${sid}')"
+          style="background:#e53e3e;color:#fff;border:none;border-radius:12px;padding:13px;
+                 font-size:15px;font-weight:800;font-family:inherit;cursor:pointer">
+          🗑 כן, מחק
+        </button>
+        <button onclick="closeModal()" class="btn-secondary">ביטול</button>
+      </div>
+    </div>
+  `, '');
+}
+window.storeConfirmDelete = (sid) => {
+  const newStores = STATE.stores.filter(s=>s.id!==sid);
+  storesRef.set(newStores);
+  listsRef.child(sid).remove();
+  openStores.delete(sid);
+  openCatalogs.delete(sid);
+  closeModal();
+  toast('החנות נמחקה');
+};
 let _stTouchId=null, _stTouchEl=null;
 function storeTouchStart(e,sid){ _stTouchId=sid; _stTouchEl=document.getElementById('sec-'+sid); e.stopPropagation(); }
 function storeTouchMove(e){
