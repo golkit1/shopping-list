@@ -1878,7 +1878,12 @@ function getSmartSuggestions(storeId, currentItems) {
     if (v >= 2) combined[k] = (combined[k]||0) + v;
   }
 
+  // Only suggest items that exist in the store's catalog
+  const store = STATE.stores.find(s=>s.id===storeId);
+  const catalogSet = new Set(store?.catalog || []);
+
   return Object.entries(combined)
+    .filter(([name]) => catalogSet.has(name))
     .sort((a,b)=>b[1]-a[1])
     .slice(0,5)
     .map(([name])=>name);
