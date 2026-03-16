@@ -1177,20 +1177,19 @@ function unifiedAdd(sid) {
   const val = inp.value.trim();
   if (!val) return;
 
-  // Auto-add to catalog if not already there
   const store = STATE.stores.find(s=>s.id===sid);
+
+  // Auto-add to catalog if not already there
   if (store && !(store.catalog||[]).includes(val)) {
-    const updatedCatalog = [...(store.catalog||[]), val];
-    // Update local state immediately so chips show it
-    store.catalog = updatedCatalog;
-    // Persist to Firebase
-    const allStores = STATE.stores;
-    storesRef.set(allStores);
+    store.catalog = [...(store.catalog||[]), val];
+    // Save just this store's catalog directly by index
+    const idx = STATE.stores.findIndex(s=>s.id===sid);
+    if (idx >= 0) storesRef.child(String(idx)).child('catalog').set(store.catalog);
   }
 
   addItemTo(sid, val);
 
-  // Clear input
+  // Clear input, keep focus
   inp.value = '';
   inp.focus();
   window['catQ_'+sid] = '';
