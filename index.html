@@ -473,9 +473,24 @@
 
   /* ── Footer ── */
   #footer {
-    text-align: center; padding: 10px 16px 24px;
+    text-align: center; padding: 10px 16px 8px;
     color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .3px;
   }
+  #presence-bar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 6px; padding: 6px 16px 20px;
+  }
+  .presence-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: 20px; padding: 4px 10px 4px 8px;
+    font-size: 12px; font-weight: 700; color: var(--text2);
+  }
+  .presence-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #48bb78; flex-shrink: 0;
+    box-shadow: 0 0 0 2px #48bb7840;
+  }
+  .presence-dot.away { background: #e2e8f0; box-shadow: none; }
 
   /* ── Category groups ── */
   .cat-group-header {
@@ -733,6 +748,7 @@
   </div>
 
   <div id="footer">🟡 מסתנכרן בזמן אמת עם כל בני המשפחה</div>
+  <div id="presence-bar"></div>
 </div>
 
 <!-- Room Screen -->
@@ -877,6 +893,7 @@ window.saveUsername = () => {
   setUsername(v);
   closeModal();
   toast('שלום ' + v + '! 👋');
+  setupPresence();
 };
 
 function vibrate(ms) {
@@ -2508,7 +2525,7 @@ function initFirebaseWithRoom(roomCode) {
   updateRoomBtnLabel(roomCode);
 
   // Ask for username, seed stores, start listeners
-  setTimeout(ensureUsername, 800);
+  setTimeout(() => { ensureUsername(); if (MY_NAME) setupPresence(); }, 800);
 
   const STORES_VERSION = "v3-2026";
   db.ref(base + '/storesVersion').once('value', snap => {
@@ -2572,6 +2589,50 @@ function attachListeners() {
   db.ref('.info/connected').on('value', snap => {
     const dot = document.getElementById('sync-dot');
     if (dot) dot.classList.toggle('live', !!snap.val());
+    if (snap.val() && MY_NAME) {
+      setupPresence();
+    }
+  });
+}
+
+// ── Presence system ──
+let _presenceRef = null;
+function setupPresence() {
+  if (!db || !MY_NAME) return;
+  const roomCode = roomGet();
+  if (!roomCode) return;
+
+  const userId   = MY_NAME + '_' + (localStorage.getItem('mkt-uid') || (() => {
+    const uid = Math.random().toString(36).slice(2,8);
+    localStorage.setItem('mkt-uid', uid);
+    return uid;
+  })());
+  _presenceRef = db.ref('rooms/' + roomCode + '/presence/' + userId);
+
+  _presenceRef.set({ name: MY_NAME, at: Date.now(), online: true });
+  _presenceRef.onDisconnect().remove();
+
+  // Update timestamp every 2 min to show "active"
+  setInterval(() => {
+    if (MY_NAME) _presenceRef?.update({ at: Date.now() });
+  }, 120000);
+
+  // Listen to all users in this room
+  db.ref('rooms/' + roomCode + '/presence').on('value', snap => {
+    const val  = snap.val() || {};
+    const now  = Date.now();
+    const users = Object.values(val).filter(u => u.name);
+    const bar  = document.getElementById('presence-bar');
+    if (!bar) return;
+    if (users.length === 0) { bar.innerHTML = ''; return; }
+    bar.innerHTML = users.map(u => {
+      const active = (now - (u.at||0)) < 300000; // active if seen in last 5 min
+      const isMe   = u.name === MY_NAME;
+      return `<div class="presence-chip">
+        <div class="presence-dot${active?'':' away'}"></div>
+        ${escHtml(u.name)}${isMe ? ' (אני)' : ''}
+      </div>`;
+    }).join('');
   });
 }
 
