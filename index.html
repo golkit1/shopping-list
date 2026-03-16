@@ -1289,9 +1289,16 @@ function refreshBody(sid) {
   const items = toArray((STATE.lists[sid]||{}).items);
   const body  = document.getElementById('body-'+sid);
   if (!store || !body) return;
+  // Save catalog scroll position before re-render
+  const oldChips = body.querySelector('.catalog-chips');
+  const savedScroll = oldChips ? oldChips.scrollTop : 0;
   body.innerHTML = renderStoreBody(store, items);
-  // Restore catalog state from memory (not DOM — DOM was just replaced)
+  // Restore catalog state + scroll
   _applyCatalogState(sid);
+  if (savedScroll > 0) {
+    const newChips = body.querySelector('.catalog-chips');
+    if (newChips) newChips.scrollTop = savedScroll;
+  }
 }
 
 
