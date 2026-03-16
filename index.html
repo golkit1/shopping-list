@@ -458,6 +458,28 @@
   .history-date { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; }
 
   /* ── Toast ── */
+  /* ── In-app notification banner ── */
+  #notif-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    pointer-events: none;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding-top: 8px;
+  }
+  .notif-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--text); color: #fff;
+    padding: 11px 18px; border-radius: 16px;
+    font-size: 13px; font-weight: 700;
+    box-shadow: 0 4px 20px rgba(0,0,0,.22);
+    max-width: 320px; width: calc(100% - 32px);
+    opacity: 0; transform: translateY(-16px);
+    transition: opacity .25s, transform .25s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+  }
+  .notif-item.show { opacity: 1; transform: translateY(0); }
+  .notif-item.hide { opacity: 0; transform: translateY(-8px); }
+  .notif-icon { font-size: 18px; flex-shrink: 0; }
+
   #toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(8px);
@@ -798,6 +820,8 @@
   <div class="pin-set-link" id="pin-admin-link" onclick="pinAdmin()">שנה קוד PIN</div>
 </div>
 
+<!-- In-app notifications -->
+<div id="notif-banner"></div>
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -2380,42 +2404,16 @@ function openRoomSwitcher() {
   const current = roomGet();
   const saved   = savedRoomsGet();
 
-  const renderSavedRooms = () => saved.map(r => {
-    const isActive = r.code === current;
-    if (isActive) {
-      return `
-    <div class="room-list-item active">
-      <span class="room-list-emoji">✅</span>
-      <div class="room-list-info" style="flex:1">
-        <input id="rn-name-${r.code}" type="text" value="${escHtml(r.nickname||r.code)}" maxlength="20"
-          placeholder="שם החדר..."
-          style="border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:14px;
-                 font-weight:800;font-family:inherit;outline:none;direction:rtl;
-                 background:var(--white);color:var(--text);width:100%;box-sizing:border-box;margin-bottom:4px"
-          onfocus="this.style.borderColor='#1B4F8A'" onblur="this.style.borderColor=''">
-        <input id="rn-desc-${r.code}" type="text" value="${escHtml(r.desc||'')}" maxlength="40"
-          placeholder="תיאור (אופציונלי)..."
-          style="border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-size:12px;
-                 font-family:inherit;outline:none;direction:rtl;
-                 background:var(--white);color:var(--text2);width:100%;box-sizing:border-box">
-        <button onclick="roomSaveInlineEdit('${r.code}')"
-          style="margin-top:6px;background:#1B4F8A;color:#fff;border:none;border-radius:8px;
-                 padding:6px 14px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer">
-          ✓ שמור שם
-        </button>
-      </div>
-    </div>`;
-    }
-    return `
-    <div class="room-list-item" onclick="roomQuickSwitch('${r.code}')">
-      <span class="room-list-emoji">🏠</span>
+  const renderSavedRooms = () => saved.map(r => `
+    <div class="room-list-item${r.code===current?' active':''}" onclick="roomQuickSwitch('${r.code}')">
+      <span class="room-list-emoji">${r.code===current?'✅':'🏠'}</span>
       <div class="room-list-info">
         <div class="room-list-code">${escHtml(r.nickname||r.code)} <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px">${r.code}</span></div>
-        ${r.desc ? `<div class="room-list-name">${escHtml(r.desc)}</div>` : ''}
+        ${r.desc ? `<div class="room-list-name">${escHtml(r.desc)}</div>` : (r.code===current ? '<div class="room-list-name">פעיל כעת</div>' : '')}
       </div>
+      <button class="room-list-del" onclick="event.stopPropagation();roomEditSaved('${r.code}')" title="ערוך">✏️</button>
       <button class="room-list-del" onclick="event.stopPropagation();roomRemoveSaved('${r.code}')" title="הסר">✕</button>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 
   openModal(`
     <div style="direction:rtl">
@@ -2571,6 +2569,7 @@ function initFirebaseWithRoom(roomCode) {
   });
 
   attachListeners();
+  attachNotifListeners(roomCode);
 }
 
 function attachListeners() {
@@ -2780,6 +2779,94 @@ function pinAdminSave() {
 }
 
 // PIN init is called from roomInit flow
+
+// ══════════════════════════════════════════════════════════════
+//  IN-APP NOTIFICATIONS
+// ══════════════════════════════════════════════════════════════
+let _notifQueue = [];
+let _notifShowing = false;
+
+function showNotif(icon, msg) {
+  _notifQueue.push({icon, msg});
+  if (!_notifShowing) _flushNotif();
+}
+
+function _flushNotif() {
+  if (!_notifQueue.length) { _notifShowing = false; return; }
+  _notifShowing = true;
+  const {icon, msg} = _notifQueue.shift();
+  const banner = document.getElementById('notif-banner');
+  if (!banner) { _notifShowing = false; return; }
+
+  const el = document.createElement('div');
+  el.className = 'notif-item';
+  el.innerHTML = `<span class="notif-icon">${icon}</span><span>${escHtml(msg)}</span>`;
+  banner.appendChild(el);
+
+  requestAnimationFrame(() => {
+    el.classList.add('show');
+    setTimeout(() => {
+      el.classList.add('hide');
+      setTimeout(() => { el.remove(); _flushNotif(); }, 300);
+    }, 3500);
+  });
+}
+
+// ── Notification listeners (called after Firebase refs are set) ──
+let _prevLists = {};
+let _prevPresence = {};
+
+function attachNotifListeners(roomCode) {
+  // Items: detect add / toggle done
+  listsRef.on('value', snap => {
+    const newLists = snap.val() || {};
+    // Skip first load
+    if (Object.keys(_prevLists).length === 0) {
+      _prevLists = JSON.parse(JSON.stringify(newLists));
+      return;
+    }
+    STATE.stores.forEach(store => {
+      const sid = store.id;
+      const oldItems = Object.values((_prevLists[sid]||{}).items||{});
+      const newItems = Object.values((newLists[sid]||{}).items||{});
+
+      // Added items
+      newItems.forEach(ni => {
+        const wasPresent = oldItems.find(oi => oi.id === ni.id);
+        if (!wasPresent && ni.addedBy && ni.addedBy !== MY_NAME) {
+          showNotif('🛒', `${ni.addedBy} הוסיף "${ni.name}" ל${store.name}`);
+        }
+      });
+
+      // Toggled to done
+      newItems.forEach(ni => {
+        if (!ni.done) return;
+        const old = oldItems.find(oi => oi.id === ni.id);
+        if (old && !old.done && ni.addedBy && ni.addedBy !== MY_NAME) {
+          showNotif('✅', `${ni.addedBy} רכש "${ni.name}"`);
+        }
+      });
+    });
+    _prevLists = JSON.parse(JSON.stringify(newLists));
+  });
+
+  // Presence: detect new users joining
+  db.ref('rooms/' + roomCode + '/presence').on('value', snap => {
+    const val = snap.val() || {};
+    Object.entries(val).forEach(([uid, u]) => {
+      if (!u.name || u.name === MY_NAME) return;
+      const wasHere = !!_prevPresence[uid];
+      if (!wasHere) showNotif('👋', `${u.name} נכנס לחדר`);
+    });
+    // Detect disconnect
+    Object.keys(_prevPresence).forEach(uid => {
+      if (!val[uid] && _prevPresence[uid].name !== MY_NAME) {
+        showNotif('👋', `${_prevPresence[uid].name} יצא`);
+      }
+    });
+    _prevPresence = {...val};
+  });
+}
 
 let toastTimer;
 function toast(msg) {
