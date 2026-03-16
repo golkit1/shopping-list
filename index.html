@@ -2380,16 +2380,42 @@ function openRoomSwitcher() {
   const current = roomGet();
   const saved   = savedRoomsGet();
 
-  const renderSavedRooms = () => saved.map(r => `
-    <div class="room-list-item${r.code===current?' active':''}" onclick="roomQuickSwitch('${r.code}')">
-      <span class="room-list-emoji">${r.code===current?'✅':'🏠'}</span>
+  const renderSavedRooms = () => saved.map(r => {
+    const isActive = r.code === current;
+    if (isActive) {
+      return `
+    <div class="room-list-item active">
+      <span class="room-list-emoji">✅</span>
+      <div class="room-list-info" style="flex:1">
+        <input id="rn-name-${r.code}" type="text" value="${escHtml(r.nickname||r.code)}" maxlength="20"
+          placeholder="שם החדר..."
+          style="border:1.5px solid var(--border);border-radius:8px;padding:5px 8px;font-size:14px;
+                 font-weight:800;font-family:inherit;outline:none;direction:rtl;
+                 background:var(--white);color:var(--text);width:100%;box-sizing:border-box;margin-bottom:4px"
+          onfocus="this.style.borderColor='#1B4F8A'" onblur="this.style.borderColor=''">
+        <input id="rn-desc-${r.code}" type="text" value="${escHtml(r.desc||'')}" maxlength="40"
+          placeholder="תיאור (אופציונלי)..."
+          style="border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-size:12px;
+                 font-family:inherit;outline:none;direction:rtl;
+                 background:var(--white);color:var(--text2);width:100%;box-sizing:border-box">
+        <button onclick="roomSaveInlineEdit('${r.code}')"
+          style="margin-top:6px;background:#1B4F8A;color:#fff;border:none;border-radius:8px;
+                 padding:6px 14px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer">
+          ✓ שמור שם
+        </button>
+      </div>
+    </div>`;
+    }
+    return `
+    <div class="room-list-item" onclick="roomQuickSwitch('${r.code}')">
+      <span class="room-list-emoji">🏠</span>
       <div class="room-list-info">
         <div class="room-list-code">${escHtml(r.nickname||r.code)} <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px">${r.code}</span></div>
-        ${r.desc ? `<div class="room-list-name">${escHtml(r.desc)}</div>` : (r.code===current ? '<div class="room-list-name">פעיל כעת</div>' : '')}
+        ${r.desc ? `<div class="room-list-name">${escHtml(r.desc)}</div>` : ''}
       </div>
-      <button class="room-list-del" onclick="event.stopPropagation();roomEditSaved('${r.code}')" title="ערוך">✏️</button>
       <button class="room-list-del" onclick="event.stopPropagation();roomRemoveSaved('${r.code}')" title="הסר">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   openModal(`
     <div style="direction:rtl">
@@ -2426,6 +2452,15 @@ function openRoomSwitcher() {
     </div>
   `, '🏠 החלפת חדר');
 }
+
+window.roomSaveInlineEdit = (code) => {
+  const name = (document.getElementById('rn-name-'+code)?.value||'').trim();
+  const desc = (document.getElementById('rn-desc-'+code)?.value||'').trim();
+  const rooms = savedRoomsGet().map(r => r.code===code ? {...r, nickname:name||code, desc} : r);
+  savedRoomsSave(rooms);
+  toast('שם החדר עודכן ✓');
+  openRoomSwitcher();
+};
 
 window.roomQuickSwitch = (code) => {
   if (code === roomGet()) { closeModal(); return; }
