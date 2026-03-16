@@ -1058,7 +1058,7 @@ function renderAccordion() {
         <span class="store-header-emoji">${store.emoji}</span>
         <div class="store-header-info">
           <div class="store-header-name" style="color:#fff">${escHtml(store.name)}</div>
-          <div class="store-header-count" style="color:rgba(255,255,255,.6)">${items.length > 0 ? items.length + ' פריטים' : 'ריק'}</div>
+          <div class="store-header-count" id="cnt-${store.id}" style="color:rgba(255,255,255,.6)">${items.length > 0 ? items.length + ' פריטים' : ''}</div>
         </div>
         ${pending.length>0?`<span class="store-header-badge">${pending.length}</span>`:''}
         <span class="store-header-arrow">▼</span>
@@ -2590,8 +2590,11 @@ function attachListeners() {
       const store = STATE.stores.find(s=>s.id===sid);
       if (store) refreshBody(sid);
     });
-    // Update badges on all stores
+    // Update badges + counts on all stores
     STATE.stores.forEach(s => {
+      const cnt = document.getElementById('cnt-'+s.id);
+      const allItems = toArray((STATE.lists[s.id]||{}).items);
+      if (cnt) cnt.textContent = allItems.length > 0 ? allItems.length + ' פריטים' : '';
       const items   = toArray((STATE.lists[s.id]||{}).items);
       const pending = items.filter(i=>!i.done);
       const sec = document.getElementById('sec-'+s.id);
