@@ -1145,7 +1145,17 @@ function renderStoreBody(store, items) {
       onclick="unifiedAdd('${sid}')">+ הוסף</button>
     <button class="btn-ghost btn-sm" style="border-color:${c};color:${c}"
       onclick="openManageCatalog('${sid}')">✏️</button>
+    <button class="btn-ghost btn-sm" title="ייבוא מטקסט" style="border-color:${c};color:${c}"
+      onclick="openImport('${sid}')">📋</button>
   </div>
+  ${pending.length > 0 ? `
+  <button onclick="markAllDone('${sid}')"
+    style="width:100%;margin-bottom:10px;padding:11px;
+           background:${c};color:#fff;border:none;border-radius:14px;
+           font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;
+           display:flex;align-items:center;justify-content:center;gap:8px">
+    ✅ קניתי הכל (${pending.length} פריטים)
+  </button>` : ''}
   <div class="catalog-panel" id="cat-panel-${sid}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.4px">מוצרי המאגר</span>
@@ -1201,6 +1211,94 @@ function renderStoreBody(store, items) {
   }
   return h;
 }
+
+function markAllDone(sid) {
+  const items = toArray((STATE.lists[sid]||{}).items).map(i => ({...i, done: true}));
+  listsRef.child(sid).child('items').set(items);
+  vibrate(40);
+  // Save to history
+  items.forEach(i => {
+    if (!i.done) return;
+    const hEntry = { id:'h'+Date.now()+Math.random(), name:i.name, storeId:sid, at:Date.now() };
+    if (MY_NAME) hEntry.by = MY_NAME;
+    historyRef.push(hEntry);
+  });
+}
+
+function openImport(sid) {
+  const store = STATE.stores.find(s=>s.id===sid);
+  if (!store) return;
+  const c = store.color;
+  openModal(`
+    <div style="direction:rtl">
+      <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:8px">📋 ייבוא רשימה מטקסט</div>
+      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:12px;line-height:1.6">
+        הדבק רשימה (שורה לכל מוצר). פורמט WhatsApp, Telegram, או כל טקסט עם שורות.
+      </div>
+      <textarea id="import-text" rows="8" placeholder="- חלב
+- ביצים 6
+עגבניות
+לחם לבן..."
+        style="width:100%;border:2px solid var(--border);border-radius:12px;padding:12px;
+               font-size:14px;font-family:inherit;outline:none;direction:rtl;
+               background:var(--bg);color:var(--text);resize:none;box-sizing:border-box;
+               transition:border-color .15s;line-height:1.7"
+        onfocus="this.style.borderColor='${c}'"
+        onblur="this.style.borderColor=''"></textarea>
+      <div id="import-preview" style="margin-top:8px;font-size:12px;color:var(--muted);font-weight:700;min-height:18px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="doImport('${sid}')"
+          style="flex:1;background:${c};color:#fff;border:none;border-radius:12px;
+                 padding:13px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer">
+          ✓ ייבא
+        </button>
+        <button onclick="closeModal()" class="btn-secondary">ביטול</button>
+      </div>
+    </div>
+  `, '📋 ייבוא');
+
+  setTimeout(() => {
+    const ta = document.getElementById('import-text');
+    if (ta) {
+      ta.focus();
+      ta.addEventListener('input', () => {
+        const lines = parseImportText(ta.value);
+        const pr = document.getElementById('import-preview');
+        if (pr) pr.textContent = lines.length > 0 ? lines.length + ' מוצרים זוהו' : '';
+      });
+    }
+  }, 100);
+}
+
+function parseImportText(text) {
+  return text.split('\n')
+    .map(l => l
+      .replace(/^[-•*✓✗→>\d.]+\s*/, '')  // remove bullets/numbers
+      .replace(/\s*[x×]\s*\d+.*$/i, '')    // remove "x2", "×3" at end
+      .replace(/\s*\d+\s*(יח|ק"ג|קג|גרם|ליטר|מ"ל|יחידות|כוס|כפית|כף|אריזה|חבילה).*$/i, '') // remove qty
+      .trim()
+    )
+    .filter(l => l.length > 1 && l.length < 50);
+}
+
+window.doImport = (sid) => {
+  const text = document.getElementById('import-text')?.value || '';
+  const names = parseImportText(text);
+  if (!names.length) { toast('לא זוהו מוצרים'); return; }
+  const existing = new Set(toArray((STATE.lists[sid]||{}).items).map(i=>i.name));
+  const toAdd = names.filter(n => !existing.has(n));
+  if (!toAdd.length) { toast('כל המוצרים כבר ברשימה'); closeModal(); return; }
+  // Add all at once
+  const items = toArray((STATE.lists[sid]||{}).items);
+  const newItems = toAdd.map(name => {
+    const item = { id:'i'+Date.now()+Math.random(), name, done:false, category: guessCategory(name) };
+    if (MY_NAME) item.addedBy = MY_NAME;
+    return item;
+  });
+  listsRef.child(sid).child('items').set([...items, ...newItems]);
+  closeModal();
+  toast('יובאו ' + toAdd.length + ' מוצרים ✓');
+};
 
 function addItemTo(storeId, name, category) {
   if (!name?.trim()) return;
