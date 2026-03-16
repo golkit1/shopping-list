@@ -2679,6 +2679,12 @@ function attachListeners() {
     }
     renderHeader();
     renderAccordion();
+    // Update counts immediately in case lists already loaded
+    STATE.stores.forEach(s => {
+      const cnt = document.getElementById('cnt-'+s.id);
+      const allItems = toArray((STATE.lists[s.id]||{}).items);
+      if (cnt) cnt.textContent = allItems.length > 0 ? allItems.length + ' פריטים' : '';
+    });
   });
   listsRef.on('value', snap => {
     STATE.lists = snap.val() || {};
